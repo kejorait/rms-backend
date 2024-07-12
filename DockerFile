@@ -1,0 +1,15 @@
+FROM python:3.10-alpine3.19
+
+WORKDIR /app
+
+COPY . .
+
+#delete .env
+
+RUN rm .env
+
+RUN pip install -r requirements.txt
+
+EXPOSE 3000
+
+CMD [ "python", "main.py" ] 
