@@ -77,8 +77,25 @@ docker run --name kejora-db -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -
 ```
 
 ## Nginx Setup
-Next, set up the Nginx server with Docker:
+Sites example
+```
+server {
+    listen 443 ssl;
+    server_name mliem.kejora.my.id;
 
+    ssl_certificate /etc/nginx/ssl/mliem.kejora.my.id_2048/fullchain.cer;
+    ssl_certificate_key /etc/nginx/ssl/mliem.kejora.my.id_2048/private.key;
+
+    location / {
+        proxy_pass http://172.17.0.4:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+Next, set up the Nginx server with Docker:
 ```
 docker run -dit \
   --name=nginx-ui \

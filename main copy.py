@@ -26,11 +26,12 @@ from services.role_activity import RoleService
 import uvicorn
 from models.request.app_setting import Update
 
-from routers import auth, bill, bill_dtl, category, menu, table, user, waiting_list
+from routers import auth, bill, bill_dtl, menu, table, user, waiting_list
 
 load_dotenv()
 
 app = FastAPI(root_path="/api/v1")
+# app = FastAPI(docs_url=None, redoc_url=None)
 
 ENV = os.getenv("ENV")
 
@@ -132,7 +133,6 @@ app.include_router(table.router)
 
 app.include_router(waiting_list.router)
 
-app.include_router(category.router)
 
 @app.get(MENU_ROUTE)
 def display_file_menu(name: str):
@@ -154,6 +154,30 @@ def display_file_category(name: str):
 def GetBillSummary(request: BaseModel, db: Session = Depends(get_db)):
     return BillService().getBillSummary(request, db)
 
+
+@app.post("/get-all-category")
+def GetAllCategory(request: BaseModel, db: Session = Depends(get_db)):
+    return CategoryService().getAllCategory(request, db)
+
+
+@app.post("/get-category-by-cd")
+def GetCategoryByCd(request: BaseModel, db: Session = Depends(get_db)):
+    return CategoryService().getCategoryByCd
+
+
+@app.post("/add-category")
+def add_category(request: BaseModel, db: Session = Depends(get_db)):
+    return CategoryService().addCategory(request, db)
+
+
+@app.post("/update-category")
+def update_category(request: BaseModel, db: Session = Depends(get_db)):
+    return CategoryService().updateCategory(request, db)
+
+
+@app.post("/delete-category")
+def delete_category(request: BaseModel, db: Session = Depends(get_db)):
+    return CategoryService().deleteCategory(request, db)
 
 
 @app.post("/get-all-role")
