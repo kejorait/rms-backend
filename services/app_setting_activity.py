@@ -55,9 +55,7 @@ class AppSettingService:
                 data_list["is_delete"] = mdl.is_delete
                 listData.append(data_list)
 
-            res["data"] = listData
-
-            jsonStr["data"] = res
+            jsonStr["data"] = listData
             jsonStr["isError"] = constants.NO
             jsonStr["status"] = constants.STATUS_SUCCESS
             return jsonStr

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from routers import bill, bill_dtl, menu, user, auth, table, waiting_list, category, role, app_setting, uploads
+from routers import bill, bill_dtl, menu, stock, user, auth, table, waiting_list, category, role, app_setting, uploads
 
 
 router = APIRouter(
@@ -28,3 +28,5 @@ router.include_router(role.router)
 router.include_router(app_setting.router)
 
 router.include_router(uploads.router)
+
+router.include_router(stock.router)

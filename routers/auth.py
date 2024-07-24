@@ -19,4 +19,11 @@ async def check_user_credential(
     request: auth.Login,
     db: Session = Depends(get_db)
 ):
+    return UserCredentialService().login(request, db, SECRET_KEY)
+
+@router.post("/login-check")
+async def check_user_credential(
+    request: auth.Login,
+    db: Session = Depends(get_db)
+):
     return UserCredentialService().checkCredential(request, db, SECRET_KEY)
