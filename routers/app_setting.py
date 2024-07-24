@@ -13,6 +13,6 @@ router = APIRouter(
 def update_app_setting(request: app_setting.Update, db: Session = Depends(get_db)):
     return AppSettingService().updateAppSetting(request, db)
 
-@router.post("/get")
+@router.get("/get")
 def get_all_app_setting(request: app_setting.Get, db: Session = Depends(get_db)):
     return AppSettingService().getAllAppSetting(request, db)

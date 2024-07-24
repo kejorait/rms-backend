@@ -11,7 +11,7 @@ router = APIRouter(
     prefix="/table"
 )
 
-@router.post("/get")
+@router.get("/get")
 async def get_all_table(request: table.Get, db: Session = Depends(get_db)):
     return TableService().getAllTable(request, db)
 

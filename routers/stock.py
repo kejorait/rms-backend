@@ -23,7 +23,7 @@ def get_stock_all(
     return res
 
 
-@router.post("/get-by-cd")
+@router.get("/get-by-cd")
 def get_stock_by_code(request: stock.GetByCd, db: Session = Depends(get_db)):
     return StockService().getStockByCode(request, db)
 

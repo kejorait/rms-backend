@@ -70,10 +70,24 @@ This guide provides step-by-step instructions for deploying the backend service,
 
 ## Database Deployment
 
-First, deploy the PostgreSQL database using Docker:
+First, deploy the PostgreSQL database using docker compose:
 
 ```
-docker run --name kejora-db -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -d postgres:alpine3.20
+version: '3.9'
+
+services:
+  kejora-db:
+    image: postgres:alpine3.20
+    container_name: kejora-db
+    restart: always
+    ports:
+      - "7777:5432"
+    environment:
+      POSTGRES_USER: kejora
+      POSTGRES_PASSWORD: kEjoranusantaraheba1t
+    volumes:
+      - /root/kejora-db/data:/var/lib/postgresql/data
+    network_mode: bridge
 ```
 
 ## Nginx Setup
@@ -83,7 +97,6 @@ map "$http_origin" $cors {
   default '';
   "~^http?://localhost(:[0-9]+)?$" "$http_origin";
   "~^https?://([a-zA-Z0-9-]+[.])*kejora.my.id(:[0-9]+)?$" "$http_origin";
-  "http://127.0.0.1:5500" "$http_origin";
 }
 
 server {
@@ -97,11 +110,14 @@ server {
         if ($cors != "") {
             add_header 'Access-Control-Allow-Origin' "$cors" always; # <-- Variable $cors
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            # add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
         }
-        # Check if it's a preflight request and "cache" it for 20 days
+        
         if ($request_method = 'OPTIONS') {
             add_header 'Access-Control-Allow-Origin' "$cors" always; # <-- Variable $cors
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
             return 204;
         }
         
@@ -112,6 +128,7 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }   
 }
+
 
 ```
 Next, set up the Nginx server with Docker:
@@ -142,8 +159,8 @@ docker system prune -a -f
 docker pull mliem/rms-backend
 docker run -d --name rms-backend \
   -e SECRET_KEY="topsecretkey" \
-  -e PG_USER="postgres" \
-  -e PG_PWD="mysecretpassword" \
+  -e PG_USER="kejora" \
+  -e PG_PWD="kEjoranusantaraheba1t" \
   -e PG_PORT="5432" \
   -e PG_DB="rms-kejora" \
   -e PG_HOST="172.17.0.2" \

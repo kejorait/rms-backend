@@ -1,13 +1,13 @@
-INSERT INTO category (cd, nm, img, created_dt, created_by, updated_dt, updated_by, is_delete, is_inactive, is_drink, deleted_dt, deleted_by)
+INSERT INTO category (cd, nm, img, created_dt, created_by, updated_dt, updated_by, is_delete, is_inactive, deleted_dt, deleted_by)
 VALUES
-    ('category1', 'Tofu & Tempeh', 'Angsio_Tofu.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category2', 'Chicken', 'Chicken_Katsu_Curry.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category3', 'Seafood', 'Sup_Tom_Yum.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category4', 'Noodles', 'Mie_Goreng.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category5', 'Rice Dishes', 'Nasi_Goreng_Kampung.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category6', 'Desserts', 'Pisang_Goreng_Cokelat_Keju.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category7', 'Beverages', 'Coffee_Latte.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL),
-    ('category8', 'Snacks', 'Enoki_Tempura.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', 'N', NULL, NULL);
+    ('category1', 'Tofu & Tempeh', 'Angsio_Tofu.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin','N', 'N', NULL, NULL),
+    ('category2', 'Chicken', 'Chicken_Katsu_Curry.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin','N', 'N', NULL, NULL),
+    ('category3', 'Seafood', 'Sup_Tom_Yum.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', NULL, NULL),
+    ('category4', 'Noodles', 'Mie_Goreng.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N',  NULL, NULL),
+    ('category5', 'Rice Dishes', 'Nasi_Goreng_Kampung.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', NULL, NULL),
+    ('category6', 'Desserts', 'Pisang_Goreng_Cokelat_Keju.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin',  'N', 'N', NULL, NULL),
+    ('category7', 'Beverages', 'Coffee_Latte.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', NULL, NULL),
+    ('category8', 'Snacks', 'Enoki_Tempura.png', '2024-05-30 12:00:00', 'Admin', '2024-05-30 12:00:00', 'Admin', 'N', 'N', NULL, NULL);
 
 INSERT INTO menu (cd, nm, img, "desc", price, category_cd, created_dt, created_by, updated_dt, updated_by, is_delete, is_inactive, is_drink)
 VALUES
