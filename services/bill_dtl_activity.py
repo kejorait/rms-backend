@@ -648,8 +648,7 @@ class BillDtlService:
     # Create Bill Detail
     def addBillDetail(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
             billDtl = BillDtl()
             billDtl.cd = uuid4().hex
@@ -683,8 +682,7 @@ class BillDtlService:
 
     def bulkaddBillDetail(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
             query = db.query(Bill)
             query = query.filter(Bill.cd == request.bill_cd)

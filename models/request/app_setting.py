@@ -9,3 +9,6 @@ class Update(BaseModel):
         default=None, examples=[{"pb1": 0.1, "service": 0.1, "restaurant_enable": "Y"}]
     )
     updated_by: str | None = Field(default=None, examples=["owner"])
+
+class Get(BaseModel):
+    None

@@ -14,6 +14,5 @@ class Category(DeclarativeOrigin):
     updated_by = Column(String)
     is_delete = Column(String)
     is_inactive = Column(String)
-    is_drink = Column(String)
     deleted_dt = Column(DateTime)
     deleted_by = Column(String)

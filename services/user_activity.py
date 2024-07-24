@@ -199,8 +199,7 @@ class UserService:
     # Create User
     def addUser(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
             reqdata = Request.form
             # self.log.info("Response "+str(jsonStr))

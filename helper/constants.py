@@ -2,6 +2,7 @@ YES = "Y"
 NO = "N"
 
 STATUS_SUCCESS = "Success"
+STATUS_FAILED = "Failed"
 STATUS_SUCCESS_UPDATE = "Data Updated Successfully"
 STATUS_SUCCESS_DELETE = "Data Deleted Successfully"
 

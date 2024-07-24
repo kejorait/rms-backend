@@ -22,15 +22,16 @@ def GetCategoryByCd(request: category.Get, db: Session = Depends(get_db)):
 
 
 @router.post("/create")
-def add_category(form_data: category.CreateForm = Depends(), db: Session = Depends(get_db)):
-    return CategoryService().addCategory(form_data, db)
+def add_category(request: category.Create = Depends(), db: Session = Depends(get_db)):
+    return CategoryService().addCategory(request, db)
 
 
-@router.post("/update-category")
-def update_category(request: category.Get, db: Session = Depends(get_db)):
+@router.post("/update")
+def update_category(request: category.Update = Depends(), db: Session = Depends(get_db)):
     return CategoryService().updateCategory(request, db)
 
 
-@router.post("/delete-category")
-def delete_category(request: category.Get, db: Session = Depends(get_db)):
+@router.post("/delete")
+def delete_category(request: category.Delete, db: Session = Depends(get_db)):
     return CategoryService().deleteCategory(request, db)
+

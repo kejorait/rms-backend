@@ -24,11 +24,10 @@ class TableSessionService:
     # def getTableSessionByTable(self, request, db):
     def tableSessionOpen(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
 
-            query = db.session.query(TableSession.cd)
+            query = db.query(TableSession.cd)
             query = query.filter(TableSession.table_cd == request.table_cd)
             query = query.filter(TableSession.is_inactive == constants.NO)
             query = query.filter(TableSession.is_delete == constants.NO)
@@ -37,7 +36,7 @@ class TableSessionService:
 
             if not data:
                 bill_cd = request.bill_cd
-                query = db.session.query(Bill.cd)
+                query = db.query(Bill.cd)
                 query = query.filter(Bill.cd == bill_cd)
                 query = query.filter(Bill.is_inactive == constants.NO)
                 query = query.filter(Bill.is_delete == constants.NO)
@@ -63,8 +62,8 @@ class TableSessionService:
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
 
-                    db.session.add(table_session)
-                    db.session.commit()
+                    db.add(table_session)
+                    db.commit()
 
                     jsonStr["data"] = {"cd": table_session.cd}
                     jsonStr["isError"] = constants.NO
@@ -89,11 +88,10 @@ class TableSessionService:
 
     def tableSessionFixed(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
 
-            query = db.session.query(TableSession.cd)
+            query = db.query(TableSession.cd)
             query = query.filter(TableSession.table_cd == request.table_cd)
             query = query.filter(TableSession.is_inactive == constants.NO)
             query = query.filter(TableSession.is_delete == constants.NO)
@@ -104,7 +102,7 @@ class TableSessionService:
 
             if not data:
                 bill_cd = request.bill_cd
-                query = db.session.query(Bill.cd)
+                query = db.query(Bill.cd)
                 query = query.filter(Bill.cd == bill_cd)
                 query = query.filter(Bill.is_inactive == constants.NO)
                 query = query.filter(Bill.is_delete == constants.NO)
@@ -131,8 +129,8 @@ class TableSessionService:
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
 
-                    db.session.add(table_session)
-                    db.session.commit()
+                    db.add(table_session)
+                    db.commit()
 
                     jsonStr["data"] = {"cd": table_session.cd}
                     jsonStr["isError"] = constants.NO
@@ -156,21 +154,20 @@ class TableSessionService:
         
     def tableSessionClose(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
-            latest_session = db.session.query(TableSession.cd).filter(TableSession.table_cd == request.table_cd)
+            latest_session = db.query(TableSession.cd).filter(TableSession.table_cd == request.table_cd)
             latest_session = latest_session.filter(TableSession.is_inactive == constants.NO)
             latest_session = latest_session.filter(TableSession.is_delete == constants.NO)
             latest_session = latest_session.filter(TableSession.is_closed == constants.NO)
             latest_session = latest_session.order_by(TableSession.created_dt.desc()).first()
 
-            table_session = db.session.query(TableSession).get(latest_session)
+            table_session = db.query(TableSession).get(latest_session)
             table_session.is_closed = constants.YES
             table_session.closed_dt = dt.datetime.now()
             table_session.closed_by = request.closed_by
 
-            db.session.commit()
+            db.commit()
 
             jsonStr["data"] = constants.STATUS_SUCCESS
             jsonStr["isError"] = constants.NO

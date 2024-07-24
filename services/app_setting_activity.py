@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
 import datetime as dt
+
+from fastapi.responses import JSONResponse
 from models.table import Table
 from models.bill import Bill
 from models.app_setting import AppSetting
@@ -57,17 +59,19 @@ class AppSettingService:
 
             jsonStr["data"] = res
             jsonStr["isError"] = constants.NO
-            jsonStr["status"] = "Success"
-            return jsonStr, 200
+            jsonStr["status"] = constants.STATUS_SUCCESS
+            return jsonStr
         
-        except Exception as e:
-            # print(e)
-            self.log.error(e)
-            raise HTTPException(status_code=500, detail=str(e))
+        except Exception as ex:
+            # print(ex)
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
+            response.status_code = 500
+            return response
 
 
     # Get Table By Id
-    def updateAppSetting(self, db, request):
+    def updateAppSetting(self, request, db):
         jsonStr = {}
         try:
             # print(self.content)
@@ -85,7 +89,9 @@ class AppSettingService:
             jsonStr["status"] = constants.STATUS_SUCCESS
             return jsonStr
         
-        except Exception as e:
-            # print(e)
-            self.log.error(e)
-            raise HTTPException(status_code=500, detail=str(e))
+        except Exception as ex:
+            # print(ex)
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
+            response.status_code = 500
+            return response

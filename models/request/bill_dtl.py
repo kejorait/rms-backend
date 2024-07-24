@@ -16,7 +16,7 @@ class Print(BaseModel):
     bill_cd: Optional[str] = Field(None, example="ABC123")
 
 
-class GetFromTo(BaseModel):
+class FromToDt(BaseModel):
     from_dt: Optional[date] = Field(None, example="2024-01-01")
     to_dt: Optional[date] = Field(None, example="2024-12-31")
 

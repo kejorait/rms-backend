@@ -23,6 +23,7 @@ def get_menu_by_code(request: menu.GetByCd, db: Session = Depends(get_db)):
 
 @router.post("/create")
 def add_menu(request: menu.Create, db: Session = Depends(get_db)):
+    print("add")
     return MenuService().addMenu(request, db)
 
 @router.post("/update")

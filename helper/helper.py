@@ -27,14 +27,14 @@ def headerstr(env):
 
     return header_str
 
-def response_cookies(response, env):
+def response_cookies(env, token):
     if env == 'DEV':
-        response.set_cookie(key="cross-site-cookie", value="bar", path="/")
+        headers = {"Set-Cookie": f"ut={str(token)};cross-site-cookie=bar; path=/; SameSite=None; Secure"}
     
     if env == 'PROD':
-        response.set_cookie(key="cross-site-cookie", value="bar", secure=True, samesite="None", domain=".kejora.my.id", path="/")
+        headers = {"Set-Cookie": f"ut={str(token)};cross-site-cookie=bar; SameSite=None; Secure; domain=.kejora.my.id; path=/"}
     
-    return response
+    return headers
 
 def verify_token(token: str, role_list: list):
     try:

@@ -1,4 +1,4 @@
-FROM python:3.10-alpine3.19
+FROM python:3.10.11-alpine
 
 WORKDIR /app
 
@@ -8,8 +8,10 @@ COPY . .
 
 RUN rm .env
 
-RUN pip install -r requirements.txt
+RUN rm -rf venv
 
-EXPOSE 3000
+RUN rm -rf __py_cache__
+
+RUN pip install -r requirements.txt
 
 CMD [ "python", "main.py" ] 

@@ -99,9 +99,8 @@ class UserCredentialService:
             self.log.error(ex)
             raise HTTPException(status_code=500, detail=str(ex))
         # print(headers)
-        response = JSONResponse(content=jsonStr)
-        response.set_cookie(key="ut", value=token)
-        response = response_cookies(response, self.env)
+        headers = response_cookies(self.env, token)
+        response = JSONResponse(content=jsonStr, headers=headers)
         return response
     
     def checkCredentialAdmin(self, request, db, SECRET_KEY):

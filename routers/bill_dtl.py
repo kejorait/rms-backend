@@ -25,12 +25,12 @@ def get_bill_detail_by_cd_print(request: bill_dtl.Print, db: Session = Depends(g
 
 
 @router.post("/get-all-barista")
-def get_bill_all_detail(request: bill_dtl.GetFromTo, db: Session = Depends(get_db)):
+def get_bill_all_detail(request: bill_dtl.FromToDt, db: Session = Depends(get_db)):
     return BillDtlService().getBillDtlAllTableBarista(request, db)
 
 
 @router.post("/get-all-kitchen")
-def get_bill_all_detail_kitchen(request: bill_dtl.GetFromTo, db: Session = Depends(get_db)):
+def get_bill_all_detail_kitchen(request: bill_dtl.FromToDt, db: Session = Depends(get_db)):
     return BillDtlService().getBillDtlAllTableKitchen(request, db)
 
 

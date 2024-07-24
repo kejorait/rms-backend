@@ -1,6 +1,7 @@
 import json
 import os
 import datetime
+from fastapi.responses import JSONResponse
 from rich.console import Console
 from models.menu import Menu
 from models.table import Table
@@ -43,7 +44,7 @@ class MenuService:
     def addMenu(self, request, db):
         jsonStr = {}
         try:
-            reqdata = Request.form
+            reqdata = request.form
             # self.log.info("Response "+str(jsonStr))
             menu = Menu()
             menu.cd = uuid4().hex
@@ -96,11 +97,10 @@ class MenuService:
             db.commit()
 
         except Exception as ex:
-            self.log.exception(" MenuService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
-        # self.log.info("Response "+str(jsonStr))
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
+            response.status_code = 500
+            return response
         return jsonStr
 
     def updateMenu(self, request, db):
@@ -156,10 +156,10 @@ class MenuService:
             db.commit()
 
         except Exception as ex:
-            self.log.exception(" MenuService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
+            response.status_code = 500
+            return response
         # self.log.info("Response "+str(jsonStr))
         return jsonStr
 
@@ -369,7 +369,7 @@ class MenuService:
         try:
             # self.log.info("Request "+str(Request.json))
 
-            cd = Request.json["cd"]
+            cd = request.cd
             query = db.query(
                 Menu,
                 Category.cd.label("category_cd"),
@@ -410,9 +410,8 @@ class MenuService:
             res["isError"] = constants.NO
             jsonStr = res
         except Exception as ex:
-            self.log.exception(" MenuService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
+            return response
         # self.log.info("Response "+str(jsonStr))
         return jsonStr

@@ -79,21 +79,40 @@ docker run --name kejora-db -p 5432:5432 -e POSTGRES_PASSWORD=mysecretpassword -
 ## Nginx Setup
 Sites example
 ```
+map "$http_origin" $cors {
+  default '';
+  "~^http?://localhost(:[0-9]+)?$" "$http_origin";
+  "~^https?://([a-zA-Z0-9-]+[.])*kejora.my.id(:[0-9]+)?$" "$http_origin";
+  "http://127.0.0.1:5500" "$http_origin";
+}
+
 server {
-    listen 443 ssl;
-    server_name mliem.kejora.my.id;
-
-    ssl_certificate /etc/nginx/ssl/mliem.kejora.my.id_2048/fullchain.cer;
-    ssl_certificate_key /etc/nginx/ssl/mliem.kejora.my.id_2048/private.key;
-
+    listen 3001 ssl;
+    server_name api.kejora.my.id;
+    
+    ssl_certificate /etc/nginx/ssl/*.kejora.my.id_kejora.my.id_2048/fullchain.cer;
+    ssl_certificate_key /etc/nginx/ssl/*.kejora.my.id_kejora.my.id_2048/private.key;
+    
     location / {
-        proxy_pass http://172.17.0.4:3000;
+        if ($cors != "") {
+            add_header 'Access-Control-Allow-Origin' "$cors" always; # <-- Variable $cors
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Credentials' 'true' always;
+        }
+        # Check if it's a preflight request and "cache" it for 20 days
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' "$cors" always; # <-- Variable $cors
+            return 204;
+        }
+        
+        proxy_pass http://172.17.0.4:8000;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    }
+    }   
 }
+
 ```
 Next, set up the Nginx server with Docker:
 ```
@@ -111,7 +130,7 @@ docker run -dit \
 Build the backend Docker image:
 
 ```
-docker build -f .\DockerFile -t mliem/rms-backend .
+docker build -f .\Dockerfile -t mliem/rms-backend .
 docker push mliem/rms-backend
 docker system prune -a -f
 ```
@@ -128,11 +147,13 @@ docker run -d --name rms-backend \
   -e PG_PORT="5432" \
   -e PG_DB="rms-kejora" \
   -e PG_HOST="172.17.0.2" \
-  -e HOST="https://mliem.kejora.my.id:3001" \
-  -e ENV="PROD" \
-  -e MENU_PATH="uploads/menu" \
-  -e USER_PATH="uploads/user" \
-  -e CATEGORY_PATH="uploads/category" \
+  -e HOST="https://mliem.kejora.my.id:3001/api/v1" \
+  -e ENV="DEV" \
+  -e MENU_PATH="menu" \
+  -e USER_PATH="user" \
+  -e CATEGORY_PATH="category" \
+  -e UPLOADS_PATH="uploads" \
+  -v /root/rms-backend/uploads:/app/uploads \
   mliem/rms-backend
 ```
 

@@ -226,8 +226,7 @@ class WaitingListService:
     # Create Table
     def addWaitingList(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
             
             query = db.query(

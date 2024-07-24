@@ -27,8 +27,7 @@ class BillService:
     # Create Bill
     def addBill(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+
         try:
             bill = Bill()
             bill.cd = request.cd
@@ -49,10 +48,8 @@ class BillService:
             jsonStr["status"] = "Success"
 
         except Exception as ex:
-            # self.log.exception(" BillService")
             self.log.error(ex)
-            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
-            response.status_code = 500
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
             return response
         # self.log.info("Response " + str(jsonStr))
 
@@ -167,25 +164,19 @@ class BillService:
             from_dt = request.from_dt
             to_dt = request.to_dt
 
-            query = db.query(Bill,
-                             Table.nm.label("table_nm"))
-            query = query.join(Table,
-                               Table.cd == Bill.table_cd)
-            query = query.join(BillDtl,
-                               BillDtl.bill_cd == Bill.cd)
-            query = query.filter(Bill.created_dt >= dt.datetime.fromtimestamp(from_dt))
-            query = query.filter(Bill.created_dt <= dt.datetime.fromtimestamp(to_dt))
+            query = db.query(Bill, Table.nm.label("table_nm"))
+            query = query.join(Table, Table.cd == Bill.table_cd)
+            query = query.join(BillDtl, BillDtl.bill_cd == Bill.cd)
+            query = query.filter(Bill.created_dt >= from_dt)
+            query = query.filter(Bill.created_dt <= to_dt)
             query = query.order_by(Bill.created_dt.desc())
             # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
             row = query.all()
-            query = db.query(Bill,
-                             WaitingList.nm.label("table_nm"))
-            query = query.join(WaitingList,
-                               WaitingList.cd == Bill.table_cd)
-            query = query.join(BillDtl,
-                               BillDtl.bill_cd == Bill.cd)
-            query = query.filter(Bill.created_dt >= dt.datetime.fromtimestamp(from_dt))
-            query = query.filter(Bill.created_dt <= dt.datetime.fromtimestamp(to_dt))
+            query = db.query(Bill, WaitingList.nm.label("table_nm"))
+            query = query.join(WaitingList, WaitingList.cd == Bill.table_cd)
+            query = query.join(BillDtl, BillDtl.bill_cd == Bill.cd)
+            query = query.filter(Bill.created_dt >= from_dt)
+            query = query.filter(Bill.created_dt <= to_dt)
             query = query.order_by(Bill.created_dt.desc())
             row_wl = query.all()
             total_row = row_wl + row
@@ -201,10 +192,8 @@ class BillService:
                     data["table_nm"] = mdl.table_nm + " - " + mdl.Bill.user_nm
                 data["bill_dt"] = mdl.Bill.created_dt
                 data["bill_cd"] = mdl.Bill.cd
-                query = db.query(BillDtl.qty,
-                                 Menu.price).select_from(BillDtl)
-                query = query.join(Menu,
-                                   Menu.cd == BillDtl.menu_cd)
+                query = db.query(BillDtl.qty, Menu.price).select_from(BillDtl)
+                query = query.join(Menu, Menu.cd == BillDtl.menu_cd)
                 query = query.filter(BillDtl.bill_cd == mdl.Bill.cd)
                 # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
                 bill_dtl = query.all()
@@ -218,12 +207,14 @@ class BillService:
                 listData.append(data)
             res = {}
 
-            listData.sort(key=lambda x: x['bill_dt'], reverse=True)
+            listData.sort(key=lambda x: x["bill_dt"], reverse=True)
             res["data"] = listData
             res["subtotal"] = subtotal
             res["service"] = subtotal * 0.05
             res["pb1"] = (subtotal + subtotal * 0.05) * 0.1
-            res["total"] = (subtotal + subtotal * 0.05) * 0.1 + subtotal * 0.05 + subtotal
+            res["total"] = (
+                (subtotal + subtotal * 0.05) * 0.1 + subtotal * 0.05 + subtotal
+            )
             # jsonStr = json.dumps(res, default=str)
             jsonStr = res
         except Exception as ex:

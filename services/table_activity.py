@@ -215,8 +215,7 @@ class TableService:
     # Create Table
     def createTable(self, request, db):
         jsonStr = {}
-        errorMessage = []
-        errorCount = 0
+        
         try:
             table = Table()
             table.cd = uuid4().hex

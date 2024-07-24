@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 import datetime as dt
+from fastapi.responses import JSONResponse
 from rich.console import Console
 from models.menu import Menu
 from models.table import Table
@@ -32,12 +33,12 @@ class RoleService:
             # self.log.info("Response "+str(jsonStr))
 
           
-            query = db.session.query(
+            query = db.query(
                 Role
             )
             query = query.filter(Role.is_delete == constants.NO)
             data = query.all()
-            db.session.close()
+            db.close()
             res = {}
             
             listData = []
@@ -55,10 +56,11 @@ class RoleService:
             res["data"] = listData
             res["status"] = "Success"
             res["isError"] = constants.NO
-            jsonStr = json.dumps(res, cls = ExtendEncoder)
+            jsonStr = res
             # self.log.info("Response " + str(jsonStr))
         except Exception as ex:
-            self.log.exception(" RoleService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
+            response.status_code = 500
+            return response
         return jsonStr
