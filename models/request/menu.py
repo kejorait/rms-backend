@@ -1,5 +1,4 @@
 from datetime import date
-from uuid import UUID
 from pydantic import BaseModel, Field
 from typing import Dict, List
 
@@ -22,7 +21,7 @@ class Update(BaseModel):
 
 class Delete(BaseModel):
     cd: str | None = Field(default=None, examples=["a"])
-    updated_by: UUID | None = Field(default=None, examples=["76f3ef06-11a3-4526-9cc8-b6f7e03a4c35"])
+    updated_by: str | None = Field(default=None, examples=["76f3ef06-11a3-4526-9cc8-b6f7e03a4c35"])
 
 class Get(BaseModel):
     bill_cd: str | None = Field(default=None, examples=["76f3ef06-11a3-4526-9cc8-b6f7e03a4c35"])

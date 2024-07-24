@@ -1,5 +1,4 @@
 from datetime import date
-from uuid import UUID
 from pydantic import BaseModel, Field
 from typing import Dict, List
 

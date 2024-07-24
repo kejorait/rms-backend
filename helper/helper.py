@@ -4,6 +4,7 @@ import math
 from fastapi import Depends, HTTPException, Query
 import jwt
 import pytz
+from helper import constants
 from helper.constants import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     REFRESH_TOKEN_EXPIRE_DAYS,
@@ -114,7 +115,7 @@ def get_pagination(
     return {"page": page, "per_page": per_page}
 
 
-def paginate(items: list, pagination: dict = Depends(get_pagination)):
+def paginate(items: list, pagination: dict = Depends(get_pagination), status: str = constants.STATUS_SUCCESS, is_error: str = constants.NO):
     page = pagination["page"]
     per_page = pagination["per_page"]
     total_pages = math.ceil(len(items) / per_page)
@@ -133,4 +134,6 @@ def paginate(items: list, pagination: dict = Depends(get_pagination)):
         "per_page": per_page,
         "total_pages": total_pages,
         "data": paginated_items,
+        "status": status,
+        "isError": is_error
     }

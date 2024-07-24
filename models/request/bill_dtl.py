@@ -1,5 +1,4 @@
 from datetime import date
-from uuid import UUID
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -22,23 +21,23 @@ class FromToDt(BaseModel):
 
 
 class Create(BaseModel):
-    bill_cd: Optional[UUID] = Field(None, example="76f3ef06-11a3-4526-9cc8-b6f7e03a4c35")
+    bill_cd: Optional[str] = Field(None, example="76f3ef06-11a3-4526-9cc8-b6f7e03a4c35")
     process_status: Optional[str] = Field(None, example="ON_PROCESS")
-    menu_cd: Optional[UUID] = Field(None, example="c13bff59-3983-4308-94d0-50a708669d68")
+    menu_cd: Optional[str] = Field(None, example="c13bff59-3983-4308-94d0-50a708669d68")
     user_nm: Optional[str] = Field(None, example="Liem")
     qty: Optional[int] = Field(None, example=2)
     created_by: Optional[str] = Field(None, example="system")
 
 
 class CreateBulkDetail(BaseModel):
-    menu_cd: Optional[UUID] = Field(None, example="c13bff59-3983-4308-94d0-50a708669d68")
+    menu_cd: Optional[str] = Field(None, example="c13bff59-3983-4308-94d0-50a708669d68")
     user_nm: Optional[str] = Field(None, example="Liem")
     qty: Optional[int] = Field(None, example=2)
     created_by: Optional[str] = Field(None, example="system")
 
 
 class CreateBulk(BaseModel):
-    bill_cd: Optional[UUID] = Field(None, example="9f47f518-33a3-4be9-9b9a-e829bf0721f5")
+    bill_cd: Optional[str] = Field(None, example="9f47f518-33a3-4be9-9b9a-e829bf0721f5")
     orders: Optional[List[CreateBulkDetail]] = None
 
 
