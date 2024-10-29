@@ -59,3 +59,5 @@ watchfiles==0.22.0
 websockets==12.0
 Werkzeug==3.0.3
 wsproto==1.2.0
+pillow==11.0.0
+pywin32==308

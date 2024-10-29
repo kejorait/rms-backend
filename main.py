@@ -4,6 +4,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+os.makedirs("./logs", exist_ok=True)
 import router
 
 load_dotenv()

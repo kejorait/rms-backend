@@ -16,6 +16,8 @@ import sqlalchemy
 from sqlalchemy.orm import aliased
 from fastapi import HTTPException
 
+import win32print
+
 class AppSettingService:
     name = "app_setting"
     setupLog(serviceName=__file__)
@@ -93,3 +95,7 @@ class AppSettingService:
             response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
             response.status_code = 500
             return response
+
+    def getPrinters():
+        printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
+        return printers 

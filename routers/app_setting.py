@@ -16,3 +16,7 @@ def update_app_setting(request: app_setting.Update, db: Session = Depends(get_db
 @router.post("/get")
 def get_all_app_setting(request: app_setting.Get, db: Session = Depends(get_db)):
     return AppSettingService().getAllAppSetting(request, db)
+
+@router.get("/printers")
+def get_printers():
+    return AppSettingService().getPrinters()
