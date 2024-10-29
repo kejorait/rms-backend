@@ -1,17 +1,14 @@
 import os
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
+
+import jwt
+import uvicorn
+from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import jwt
-from functools import wraps
-from dotenv import load_dotenv
-import yaml
-import uvicorn
 
-from routers import router
+import router
 
 load_dotenv()
 
@@ -32,6 +29,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+WORKERS_COUNT = int(os.environ.get("WORKERS_COUNT", 1))
 
 
 def get_db():
@@ -72,4 +71,4 @@ if __name__ == "__main__":
     else:
         print("Running in production mode")
         # uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-        uvicorn.run("main:app", host="0.0.0.0", port=3000)
+        uvicorn.run("main:app", host="0.0.0.0", port=8000, workers=WORKERS_COUNT)

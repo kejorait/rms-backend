@@ -13,11 +13,11 @@ class StockController:
 
     name = "StockController"
 
-    def getStockAll(self, request, db, pagination: dict, sort_by: str, sort_order: str):
+    def getStockAll(self, request, db):
         try:
-            res = StockService().getStockAll(request, db, sort_by, sort_order)
+            res = StockService().getStockAll(request, db)
             paginated_data = paginate(
-                res, pagination, constants.STATUS_SUCCESS, constants.NO
+                res, request, constants.STATUS_SUCCESS, constants.NO
             )
         except Exception as ex:
             paginated_data = JSONResponse(

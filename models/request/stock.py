@@ -34,4 +34,14 @@ class GetByCd(BaseModel):
 
 
 class GetAll(BaseModel):
-    search: str | None = Field(default=None, examples=["heinek"])
+    page: int | None = Field(default=None, examples=[1])
+    per_page: int | None = Field(default=None, examples=[10])
+    search: str | None = Field(default=None, examples=["a"])
+    sort_by: str | None = Field(default=None, examples=["cd"])
+    sort_order: str | None = Field(default=None, examples=["asc", "desc"])
+
+class DeleteBulk(BaseModel):
+    cd: list | None = Field(default=None, examples=["a", "b", "c"])
+    updated_by: str | None = Field(
+        default=None, examples=["76f3ef06-11a3-4526-9cc8-b6f7e03a4c35"]
+    )

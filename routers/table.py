@@ -26,3 +26,7 @@ async def update_table(request: table.Update, db: Session = Depends(get_db)):
 @router.post("/delete")
 async def delete_table(request: table.Delete, db: Session = Depends(get_db)):
     return TableService().deleteTable(request, db)
+
+@router.post("/delete-bulk")
+async def delete_table_bulk(request: table.DeleteBulk, db: Session = Depends(get_db)):
+    return TableService().deleteTableBulk(request, db)

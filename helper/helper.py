@@ -115,9 +115,14 @@ def get_pagination(
     return {"page": page, "per_page": per_page}
 
 
-def paginate(items: list, pagination: dict = Depends(get_pagination), status: str = constants.STATUS_SUCCESS, is_error: str = constants.NO):
-    page = pagination["page"]
-    per_page = pagination["per_page"]
+def paginate(
+    items: list,
+    pagination: dict = Depends(get_pagination),
+    status: str = constants.STATUS_SUCCESS,
+    is_error: str = constants.NO,
+):
+    page = pagination.page
+    per_page = pagination.per_page
     total_pages = math.ceil(len(items) / per_page)
 
     start = (page - 1) * per_page
@@ -125,7 +130,15 @@ def paginate(items: list, pagination: dict = Depends(get_pagination), status: st
     total = len(items)
 
     if start >= total:
-        raise HTTPException(status_code=404, detail="Page not found")
+        return {
+            "total": total,
+            "page": page,
+            "per_page": per_page,
+            "total_pages": total_pages,
+            "data": [],
+            "status": status,
+            "isError": is_error,
+        }
 
     paginated_items = items[start:end]
     return {
@@ -135,5 +148,5 @@ def paginate(items: list, pagination: dict = Depends(get_pagination), status: st
         "total_pages": total_pages,
         "data": paginated_items,
         "status": status,
-        "isError": is_error
+        "isError": is_error,
     }

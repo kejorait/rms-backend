@@ -6,12 +6,14 @@ COPY . .
 
 #delete .env
 
-RUN rm .env
+# RUN rm .env
 
-RUN rm -rf venv
+# RUN rm -rf venv
 
-RUN rm -rf __py_cache__
+# RUN rm -rf __py_cache__
 
-RUN pip install -r requirements.txt
+RUN pip install uv
+
+RUN uv pip install --system -r requirements.txt
 
 CMD [ "python", "main.py" ] 

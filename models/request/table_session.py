@@ -17,3 +17,7 @@ class Fixed(BaseModel):
     amount: Optional[str] = Field(None, example="3600")
     created_by: Optional[str] = Field(None, example="owner")
     bill_cd: Optional[str] = Field(None, example="76f3ef06-11a3-4526-9cc8-b6f7e03a4c35")
+
+class Close(BaseModel):
+    table_cd: Optional[str] = Field(None, example="1")
+    closed_by: Optional[str] = Field(None, example="owner")

@@ -33,6 +33,6 @@ def close_bill(request: bill.Close, db: Session = Depends(get_db)):
 def pay_bill(request: bill.Paid, db: Session = Depends(get_db)):
     return BillService().paidBill(request, db)
 
-@router.get("/summary")
+@router.post("/summary")
 def GetBillSummary(request: bill.FromToDt, db: Session = Depends(get_db)):
     return BillService().getBillSummary(request, db)

@@ -18,10 +18,10 @@ def table_session_open(request: table_session.Open, db: Session = Depends(get_db
 
 
 @router.post("/close")
-def table_session_close(request: BaseModel, db: Session = Depends(get_db)):
+def table_session_close(request: table_session.Close, db: Session = Depends(get_db)):
     return TableSessionService().tableSessionClose(request, db)
 
 
 @router.post("/fixed")
-def table_session_fixed(request: BaseModel, db: Session = Depends(get_db)):
+def table_session_fixed(request: table_session.Fixed, db: Session = Depends(get_db)):
     return TableSessionService().tableSessionFixed(request, db)

@@ -22,3 +22,7 @@ class Update(BaseModel):
 class Delete(BaseModel):
     cd: str | None = Field(default=None, examples=["123e4567-e89b-12d3-a456-426655440000"])
     deleted_by: str | None = Field(default=None, examples=["owner"])
+
+class DeleteBulk(BaseModel):
+    cd: list | None = Field(default=None, examples=["123e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440000"])
+    deleted_by: str | None = Field(default=None, examples=["owner"])

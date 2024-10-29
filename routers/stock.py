@@ -11,19 +11,13 @@ from models.request import stock
 router = APIRouter(prefix="/stock")
 
 
-@router.get("/get-all")
-def get_stock_all(
-    request: stock.GetAll,
-    db: Session = Depends(get_db),
-    pagination: dict = Depends(get_pagination),
-    sort_by: Optional[str] = None,
-    sort_order: Optional[str] = "asc",
-):
-    res = StockController().getStockAll(request, db, pagination, sort_by, sort_order)
+@router.post("/get-all")
+def get_stock_all(request: stock.GetAll, db: Session = Depends(get_db)):
+    res = StockController().getStockAll(request, db)
     return res
 
 
-@router.get("/get-by-cd")
+@router.post("/get-by-cd")
 def get_stock_by_code(request: stock.GetByCd, db: Session = Depends(get_db)):
     return StockService().getStockByCode(request, db)
 
@@ -42,3 +36,7 @@ def update_stock(request: stock.Update, db: Session = Depends(get_db)):
 @router.post("/delete")
 def delete_stock(request: stock.Delete, db: Session = Depends(get_db)):
     return StockService().deleteStock(request, db)
+
+@router.post("/delete-bulk")
+def delete_stock_bulk(request: stock.DeleteBulk, db: Session = Depends(get_db)):
+    return StockService().deleteStockBulk(request, db)

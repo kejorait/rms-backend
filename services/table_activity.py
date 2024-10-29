@@ -39,6 +39,7 @@ class TableService:
                     Table.cd,
                     Table.nm,
                     Table.desc,
+                    Table.is_billiard,
                     Bill.user_nm,
                     Bill.created_by,
                     Bill.is_closed,
@@ -84,6 +85,7 @@ class TableService:
                 subquery_alias.c.cd,
                 subquery_alias.c.nm,
                 subquery_alias.c.desc,
+                subquery_alias.c.is_billiard,
                 subquery_alias.c.user_nm,
                 subquery_alias.c.created_by,
                 subquery_alias.c.is_closed,
@@ -109,6 +111,7 @@ class TableService:
                 data_list["cd"] = mdl.cd
                 data_list["nm"] = mdl.nm
                 data_list["desc"] = mdl.desc
+                data_list["is_billiard"] = mdl.is_billiard
 
                 session_status = ""
 
@@ -296,6 +299,34 @@ class TableService:
             self.log.exception(" MenuService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
+            return jsonStr, 500
+        # self.log.info("Response "+str(jsonStr))
+        return jsonStr
+    
+    def deleteTableBulk(self, request, db):
+        jsonStr = {"data": [], "isError": constants.NO, "status": "Success"}
+        try:
+            # Check if cd is a list
+            cds = request.cd if isinstance(request.cd, list) else [request.cd]
+            
+            for cd in cds:
+                table = db.query(Table).get(cd)
+                if table:
+                    table.is_delete = constants.YES
+                    table.updated_dt = dt.datetime.now()
+                    table.updated_by = request.deleted_by
+                    jsonStr["data"].append({"cd": cd, "status": constants.STATUS_SUCCESS_DELETE})
+                else:
+                    jsonStr["data"].append({"cd": cd, "status": "Not Found"})
+            
+            db.commit()
+        except Exception as ex:
+            self.log.exception(" MenuService")
+            jsonStr = {
+                "isError": constants.YES,
+                "status": "Failed",
+                "data": str(ex)
+            }
             return jsonStr, 500
         # self.log.info("Response "+str(jsonStr))
         return jsonStr

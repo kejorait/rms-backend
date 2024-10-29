@@ -132,12 +132,45 @@ class StockService:
         # self.log.info("Response "+str(jsonStr))
         return jsonStr
 
-    def getStockAll(self, request, db, sort_by, sort_order):
+    def deleteStockBulk(self, request, db):
+        jsonStr = {"data": [], "isError": constants.NO, "status": "Success"}
+        try:
+            # Check if cd is a list
+            cds = request.cd if isinstance(request.cd, list) else [request.cd]
+            
+            for cd in cds:
+                stock = db.query(Stock).get(cd)
+                if stock:
+                    stock.updated_dt = datetime.datetime.now()
+                    stock.updated_by = request.updated_by
+                    stock.is_delete = constants.YES
+                    stock_obj = ExtendEncoder().to_dict(stock)
+                    jsonStr["data"].append(stock_obj)
+                else:
+                    jsonStr["data"].append({"cd": cd, "status": "Not Found"})
+            
+            db.commit()
+        except Exception as ex:
+            jsonStr = JSONResponse(
+                status_code=500,
+                content={
+                    "data": str(ex),
+                    "isError": constants.YES,
+                    "status": constants.STATUS_FAILED,
+                },
+            )
+        # self.log.info("Response "+str(jsonStr))
+        return jsonStr
+    
+    def getStockAll(self, request, db):
         # self.log.info("Request "+str(Request.json))
 
+        search = request.search
+        sort_by = request.sort_by
+        sort_order = request.sort_order
+        
         query = db.query(Stock)
         query = query.filter(Stock.is_delete == constants.NO)
-        search = request.search
         if search:
             query = query.filter(Stock.nm.ilike("%{}%".format(search)))
         query = query.filter(Stock.is_inactive == constants.NO)
@@ -156,8 +189,10 @@ class StockService:
         res = {}
 
         listData = []
+        row_no = 1
         for mdl in data:
             data_list = {}
+            data_list["row_no"] = row_no
             data_list["cd"] = mdl.cd
             data_list["nm"] = mdl.nm
             data_list["amount"] = mdl.amount
@@ -169,6 +204,7 @@ class StockService:
             data_list["is_delete"] = mdl.is_delete
             data_list["updated_dt"] = mdl.updated_dt
             data_list["updated_by"] = mdl.updated_by
+            row_no = row_no + 1
 
             listData.append(data_list)
 
@@ -192,6 +228,7 @@ class StockService:
             data_list = {}
             data_list["cd"] = data.cd
             data_list["nm"] = data.nm
+            data_list["amount"] = data.amount
             data_list["desc"] = data.desc
             data_list["price"] = data.price
             data_list["created_dt"] = data.created_dt

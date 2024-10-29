@@ -70,24 +70,31 @@ This guide provides step-by-step instructions for deploying the backend service,
 
 ## Database Deployment
 
-First, deploy the PostgreSQL database using docker compose:
+First, deploy the PostgreSQL database using docker:
 
+Powershell
 ```
-version: '3.9'
-
-services:
-  kejora-db:
-    image: postgres:alpine3.20
-    container_name: kejora-db
-    restart: always
-    ports:
-      - "7777:5432"
-    environment:
-      POSTGRES_USER: kejora
-      POSTGRES_PASSWORD: kEjoranusantaraheba1t
-    volumes:
-      - /root/kejora-db/data:/var/lib/postgresql/data
-    network_mode: bridge
+docker run -d `
+  --name kejora-db `
+  --restart always `
+  -p 7777:5432 `
+  -e POSTGRES_USER=kejora `
+  -e POSTGRES_PASSWORD=kEjoranusantaraheba1t `
+  -v /root/kejora-db/data:/var/lib/postgresql/data `
+  --network bridge `
+  postgres:16-alpine3.20
+```
+bash
+```
+docker run -d \
+  --name kejora-db \
+  --restart always \
+  -p 7777:5432 \
+  -e POSTGRES_USER=kejora \
+  -e POSTGRES_PASSWORD=kEjoranusantaraheba1t \
+  -v /root/kejora-db/data:/var/lib/postgresql/data \
+  --network bridge \
+  postgres:16-alpine3.20
 ```
 
 ## Nginx Setup
@@ -140,7 +147,7 @@ docker run -dit \
   -v /mnt/user/appdata/nginx:/etc/nginx \
   -v /mnt/user/appdata/nginx-ui:/etc/nginx-ui \
   -v /var/www:/var/www \
-  -p 80:80 -p 3001:3001 -p 8888:8888 \
+  --network host \
   uozi/nginx-ui:latest
 ```
 ## Building the Backend
@@ -157,19 +164,20 @@ Deploy the backend service:
 docker rm -f rms-backend
 docker system prune -a -f
 docker pull mliem/rms-backend
-docker run -d --name rms-backend \
+docker run -d -p 9898:8000 --name rms-backend \
   -e SECRET_KEY="topsecretkey" \
   -e PG_USER="kejora" \
   -e PG_PWD="kEjoranusantaraheba1t" \
-  -e PG_PORT="5432" \
+  -e PG_PORT="7777" \
   -e PG_DB="rms-kejora" \
-  -e PG_HOST="172.17.0.2" \
-  -e HOST="https://mliem.kejora.my.id:3001/api/v1" \
+  -e PG_HOST="100.105.62.3" \
+  -e HOST="https://api.kejora.my.id:3001/api/v1" \
   -e ENV="DEV" \
   -e MENU_PATH="menu" \
   -e USER_PATH="user" \
   -e CATEGORY_PATH="category" \
   -e UPLOADS_PATH="uploads" \
+  -e WORKERS_COUNT=4 \
   -v /root/rms-backend/uploads:/app/uploads \
   mliem/rms-backend
 ```
