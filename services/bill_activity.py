@@ -1,20 +1,14 @@
-import json
-from datetime import datetime
 import datetime as dt
+
 from fastapi.responses import JSONResponse
-from rich.console import Console
-from uuid import uuid4
-from models.menu import Menu
-from models.table import Table
+
+from helper import constants
 from models.bill import Bill
 from models.bill_dtl import BillDtl
+from models.menu import Menu
+from models.table import Table
 from models.waiting_list import WaitingList
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
 from utils.tinylog import getLogger, setupLog
-from sqlalchemy import func
-from fastapi.requests import Request
-from fastapi import HTTPException
 
 
 class BillService:
@@ -137,13 +131,19 @@ class BillService:
             # self.log.info("Response "+str(jsonStr))
             cd = request.cd
             bill = db.query(Bill).get(cd)
+            bill.paid_type = request.paid_type
+            bill.paid_amount = request.paid_amount
+            bill.bill_total = request.bill_total
+            bill.paid_change = request.bill_total - request.paid_amount
             bill.is_paid = constants.YES
             bill.paid_by = request.paid_by
             bill.paid_dt = dt.datetime.now()
 
             db.commit()
 
-            jsonStr["data"] = constants.STATUS_SUCCESS
+            jsonStr["data"] = {
+                "paid_change": bill.paid_change
+            }
             jsonStr["isError"] = constants.NO
             jsonStr["status"] = "Success"
 

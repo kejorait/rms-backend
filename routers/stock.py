@@ -1,19 +1,17 @@
-from datetime import date
-from typing import Optional
+
 from fastapi import APIRouter, Depends
-from helper.helper import get_pagination, paginate
-from services.stock_activity import StockService
-from controllers.stock import StockController
-from helper.database import get_db
 from sqlalchemy.orm import Session
+
+from helper.database import get_db
 from models.request import stock
+from services.stock_activity import StockService
 
 router = APIRouter(prefix="/stock")
 
 
 @router.post("/get-all")
 def get_stock_all(request: stock.GetAll, db: Session = Depends(get_db)):
-    res = StockController().getStockAll(request, db)
+    res = StockService().getStockAll(request, db)
     return res
 
 

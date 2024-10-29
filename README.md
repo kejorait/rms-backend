@@ -164,13 +164,21 @@ Deploy the backend service:
 docker rm -f rms-backend
 docker system prune -a -f
 docker pull mliem/rms-backend
+<<<<<<< Updated upstream
 docker run -d -p 9898:8000 --name rms-backend \
+=======
+docker run -d -p 8686:8000 --name rms-backend \
+>>>>>>> Stashed changes
   -e SECRET_KEY="topsecretkey" \
   -e PG_USER="kejora" \
   -e PG_PWD="kEjoranusantaraheba1t" \
   -e PG_PORT="7777" \
   -e PG_DB="rms-kejora" \
+<<<<<<< Updated upstream
   -e PG_HOST="100.105.62.3" \
+=======
+  -e PG_HOST="172.17.0.2" \
+>>>>>>> Stashed changes
   -e HOST="https://api.kejora.my.id:3001/api/v1" \
   -e ENV="DEV" \
   -e MENU_PATH="menu" \

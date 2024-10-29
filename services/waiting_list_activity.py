@@ -1,4 +1,3 @@
-import json
 from datetime import datetime
 import datetime as dt
 
@@ -6,13 +5,10 @@ from fastapi.responses import JSONResponse
 from models.table import Table
 from models.waiting_list import WaitingList
 from models.bill import Bill
-from helper.jsonHelper import ExtendEncoder
 from helper import constants
 from utils.tinylog import getLogger, setupLog
 from uuid import uuid4
-from sqlalchemy import func
 from fastapi.requests import Request
-from fastapi import HTTPException
 
 class WaitingListService:
     name = "waitinglist"
@@ -42,7 +38,7 @@ class WaitingListService:
             query = query.filter(Bill.is_paid == constants.NO)
             query = query.filter(WaitingList.is_delete == constants.NO)
             query = query.order_by(WaitingList.created_dt.asc())
-            self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
+            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
             data = query.all()
             # print('data', data)
             db.close()

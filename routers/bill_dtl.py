@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends
-from services.bill_dtl_activity import BillDtlService
-from helper.database import get_db
 from sqlalchemy.orm import Session
+
+from helper.database import get_db
 from models.request import bill_dtl as bill_dtl
+from services.bill_dtl_activity import BillDtlService
 
 router = APIRouter(
     prefix="/bill-dtl"
@@ -34,12 +35,12 @@ def get_bill_all_detail_kitchen(request: bill_dtl.FromToDt, db: Session = Depend
     return BillDtlService().getBillDtlAllTableKitchen(request, db)
 
 
-@router.post("/create")
+@router.post("/single-create")
 def add_bill_detail(request: bill_dtl.Create, db: Session = Depends(get_db)):
     return BillDtlService().addBillDetail(request, db)
 
 
-@router.post("/bulk-create")
+@router.post("/create")
 def bulk_add_bill_detail(request: bill_dtl.CreateBulk, db: Session = Depends(get_db)):
     return BillDtlService().bulkaddBillDetail(request, db)
 

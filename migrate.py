@@ -1,6 +1,6 @@
 import os
 import sys
-from sqlalchemy import create_engine, inspect
+from sqlalchemy import create_engine, inspect, Column, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import DeclarativeMeta
 import importlib.util
@@ -88,9 +88,24 @@ for model_name, model_class in models.items():
     if model_name == "DeclarativeOrigin":
         continue
     table_name = model_class.__tablename__
+    
     if not inspector.has_table(table_name):
         model_class.__table__.create(engine)
         print(f"Created table for model {model_name}: {table_name}")
+    else:
+        # Get existing columns from the database
+        existing_columns = {col['name'] for col in inspector.get_columns(table_name)}
+        
+        # Iterate over model columns and check if they exist in the table
+        for column in model_class.__table__.columns:
+            if column.name not in existing_columns:
+                # Add missing column
+                with engine.begin() as conn:
+                    alter_stmt = text(f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column.type}")
+                    print(alter_stmt)
+                    conn.execute(alter_stmt)
+                    print(f"Added column {column.name} to table {table_name}")
+
 
 # Commit changes and close session
 session.commit()

@@ -22,6 +22,7 @@ class FromToDt(BaseModel):
 
 class Create(BaseModel):
     bill_cd: Optional[str] = Field(None, example="76f3ef06-11a3-4526-9cc8-b6f7e03a4c35")
+    desc: Optional[str] = Field(None, example="desc")
     process_status: Optional[str] = Field(None, example="ON_PROCESS")
     menu_cd: Optional[str] = Field(None, example="c13bff59-3983-4308-94d0-50a708669d68")
     user_nm: Optional[str] = Field(None, example="Liem")

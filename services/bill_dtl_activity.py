@@ -1,20 +1,15 @@
-import json
-from datetime import datetime
 import datetime as dt
-from rich.console import Console
+from datetime import datetime
 from uuid import uuid4
+
+from helper import constants
+from models.bill import Bill
 from models.bill_dtl import BillDtl
 from models.menu import Menu
 from models.table import Table
-from models.bill import Bill
 from models.table_session import TableSession
 from models.waiting_list import WaitingList
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
 from utils.tinylog import getLogger, setupLog
-from sqlalchemy import func
-from fastapi.requests import Request
-from fastapi import HTTPException
 
 
 class BillDtlService:
@@ -698,16 +693,16 @@ class BillDtlService:
                     billDtl.cd = uuid4().hex
                     billDtl.bill_cd = request.bill_cd
                     billDtl.process_status = "NEW_ORDER"
-                    billDtl.menu_cd = mdl["menu_cd"]
+                    billDtl.menu_cd = mdl.menu_cd
                     if "desc" in mdl:
-                        billDtl.desc = mdl["desc"]
+                        billDtl.desc = mdl.desc
                     else:
                         billDtl.desc = ""
-                    billDtl.qty = mdl["qty"]
-                    billDtl.init_qty = mdl["qty"]
+                    billDtl.qty = mdl.qty
+                    billDtl.init_qty = mdl.qty
                     billDtl.split_qty = 0
                     billDtl.created_dt = dt.datetime.now()
-                    billDtl.created_by = mdl["created_by"]
+                    billDtl.created_by = mdl.created_by
                     billDtl.is_delete = constants.NO
                     billDtl.is_inactive = constants.NO
 

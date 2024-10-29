@@ -1,6 +1,8 @@
-from datetime import date, datetime
-from pydantic import BaseModel, Field
+from datetime import datetime
 from typing import Optional
+
+from pydantic import BaseModel, Field
+
 
 class Create(BaseModel):
     cd: str = Field(..., example="eac51a0464334c25b2b3eca27ae5792a")
@@ -28,6 +30,9 @@ class Close(BaseModel):
 
 class Paid(BaseModel):
     cd: str = Field(..., example="eac51a0464334c25b2b3eca27ae5792a")
+    paid_type: Optional[str] = Field(None, example="CASH")
+    bill_total: Optional[int] = Field(None, example=10000)
+    paid_amount: Optional[int] = Field(None, example=10000)
     paid_by: Optional[str] = Field(None, example="system")
 
 class FromToDt(BaseModel):

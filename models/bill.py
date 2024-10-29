@@ -1,11 +1,15 @@
-from sqlalchemy import Column,String,Integer,DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, DateTime, Integer, String
 
-from models.base import DATEFIELDS, DeclarativeOrigin
+from models.base import DeclarativeOrigin
+
 
 class Bill(DeclarativeOrigin):
     __tablename__ = "bill"
     cd = Column(String, primary_key=True)
+    bill_total = Column(Integer)
+    paid_type = Column(String)
+    paid_amount = Column(Integer)
+    paid_change = Column(Integer)
     table_cd = Column(String)
     created_dt = Column(DateTime)
     created_by = Column(String)

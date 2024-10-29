@@ -1,7 +1,7 @@
-from sqlalchemy import Column,String,Integer,DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, DateTime, Integer, String
 
-from models.base import DATEFIELDS, DeclarativeOrigin
+from models.base import DeclarativeOrigin
+
 
 class TableSession(DeclarativeOrigin):
     __tablename__ = "table_session"
@@ -19,4 +19,5 @@ class TableSession(DeclarativeOrigin):
     closed_by = Column(String)
     user_nm = Column(String)
     bill_cd = Column(String)
+    serial_sent = Column(String, default='N')  # Set default value to 'N'
     

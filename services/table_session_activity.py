@@ -1,14 +1,12 @@
-import json
-from uuid import uuid4
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
-from utils.tinylog import getLogger, setupLog
-from models.table_session import TableSession
-from models.bill import Bill
-from sqlalchemy import func
 import datetime as dt
+from uuid import uuid4
+
 from fastapi.requests import Request
-from fastapi import HTTPException
+
+from helper import constants
+from models.bill import Bill
+from models.table_session import TableSession
+from utils.tinylog import getLogger, setupLog
 
 
 class TableSessionService:
@@ -61,6 +59,7 @@ class TableSessionService:
                     table_session.is_open = constants.YES
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
+                    table_session.serial_sent = constants.NO
 
                     db.add(table_session)
                     db.commit()
@@ -128,6 +127,7 @@ class TableSessionService:
                     table_session.is_open = constants.NO
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
+                    table_session.serial_sent = constants.NO
 
                     db.add(table_session)
                     db.commit()

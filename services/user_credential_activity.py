@@ -8,14 +8,12 @@ from models.user import User
 from models.user_session import UserSession
 from helper.jsonHelper import ExtendEncoder
 from helper import constants
-from helper.helper import create_refresh_token, headerstr, response_cookies, tokenstr, create_access_token
+from helper.helper import create_refresh_token, response_cookies, tokenstr, create_access_token
 from utils.tinylog import getLogger, setupLog
 from uuid import uuid4
-from sqlalchemy import func
 import bcrypt
 import jwt
 from helper.helper import datetimeToLongJS
-from flask_jwt_extended import set_access_cookies
 import os
 from fastapi.requests import Request
 from fastapi import HTTPException
