@@ -1,7 +1,7 @@
-from sqlalchemy import Column,String,Integer,DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, DateTime, Integer, String
 
-from models.base import DATEFIELDS, DeclarativeOrigin
+from models.base import DeclarativeOrigin
+
 
 class BillDtl(DeclarativeOrigin):
     __tablename__ = "bill_dtl"
@@ -12,6 +12,8 @@ class BillDtl(DeclarativeOrigin):
     user_nm = Column(String)
     qty = Column(Integer)
     init_qty = Column(Integer)
+    price = Column(Integer, default=0)
+    discount = Column(Integer, default=0)
     created_dt = Column(DateTime)
     created_by = Column(String)
     is_inactive = Column(String)

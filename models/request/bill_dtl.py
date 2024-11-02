@@ -1,6 +1,7 @@
 from datetime import date
-from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class Get(BaseModel):
@@ -34,6 +35,7 @@ class CreateBulkDetail(BaseModel):
     menu_cd: Optional[str] = Field(None, example="c13bff59-3983-4308-94d0-50a708669d68")
     user_nm: Optional[str] = Field(None, example="Liem")
     qty: Optional[int] = Field(None, example=2)
+    discount: Optional[int] = Field(None, example=0)
     created_by: Optional[str] = Field(None, example="system")
 
 

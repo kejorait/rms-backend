@@ -1,10 +1,11 @@
 import os
+
 from fastapi import APIRouter, Depends
-from fastapi.responses import FileResponse, JSONResponse
-from helper.database import get_db
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+
+from helper.database import get_db
 from models.request import uploads
-from services.category_activity import CategoryService
 from services.upload_activity import UploadActivity
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -30,6 +31,7 @@ LOGO_FILE_PATH = "./assets" + "/logo"
 os.makedirs(MENU_FOLDER, exist_ok=True)
 os.makedirs(USER_FOLDER, exist_ok=True)
 os.makedirs(CATEGORY_FOLDER, exist_ok=True)
+os.makedirs(LOGO_FILE_PATH, exist_ok=True)
 
 
 @router.get(CATEGORY_ROUTE + "{name}")

@@ -1,7 +1,9 @@
 import os
+
 from fastapi import APIRouter, Depends
-from helper.database import get_db
 from sqlalchemy.orm import Session
+
+from helper.database import get_db
 from models.request import category
 from services.category_activity import CategoryService
 
@@ -17,7 +19,7 @@ def GetAllCategory(request: category.Get, db: Session = Depends(get_db)):
 
 
 @router.post("/get-by-cd")
-def GetCategoryByCd(request: category.Get, db: Session = Depends(get_db)):
+def GetCategoryByCd(request: category.GetDtl, db: Session = Depends(get_db)):
     return CategoryService().getCategoryByCd
 
 

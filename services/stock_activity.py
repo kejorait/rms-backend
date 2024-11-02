@@ -1,22 +1,12 @@
-import json
 import os
 import datetime
 from fastapi.responses import JSONResponse
-from rich.console import Console
 from models.stock import Stock
-from models.table import Table
-from models.bill import Bill
-from models.category import Category
 from helper.jsonHelper import ExtendEncoder
 from helper import constants
 from utils.tinylog import getLogger, setupLog
 from uuid import uuid4
-from models.waiting_list import WaitingList
-from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
-import dotenv
-from fastapi.requests import Request
-from fastapi import HTTPException
 
 load_dotenv()
 
@@ -186,7 +176,6 @@ class StockService:
         data = query.all()
         # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
         db.close()
-        res = {}
 
         listData = []
         row_no = 1
@@ -208,7 +197,12 @@ class StockService:
 
             listData.append(data_list)
 
-        return listData
+            jsonStr = {}
+            jsonStr["data"] = listData
+            jsonStr["isError"] = constants.NO
+            jsonStr["status"] = constants.STATUS_SUCCESS
+
+        return jsonStr
 
     def getStockByCode(self, request, db):
         jsonStr = {}

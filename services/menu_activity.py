@@ -1,22 +1,19 @@
-import json
-import os
 import datetime
+import os
+from uuid import uuid4
+
+from dotenv import load_dotenv
+from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from rich.console import Console
-from models.menu import Menu
-from models.table import Table
+from werkzeug.utils import secure_filename
+
+from helper import constants
 from models.bill import Bill
 from models.category import Category
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
-from utils.tinylog import getLogger, setupLog
-from uuid import uuid4
+from models.menu import Menu
+from models.table import Table
 from models.waiting_list import WaitingList
-from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
-import dotenv
-from fastapi.requests import Request
-from fastapi import HTTPException
+from utils.tinylog import getLogger, setupLog
 
 load_dotenv()
 
@@ -44,16 +41,17 @@ class MenuService:
     def addMenu(self, request, db):
         jsonStr = {}
         try:
-            reqdata = request.form
+            
             # self.log.info("Response "+str(jsonStr))
             menu = Menu()
             menu.cd = uuid4().hex
-            menu.nm = reqdata["nm"]
-            menu.desc = reqdata["desc"]
-            menu.price = reqdata["price"]
-            menu.category_cd = reqdata["category_cd"]
+            menu.nm = request.nm
+            menu.desc = request.desc
+            menu.price = request.price
+
+            menu.category_cd = request.category_cd
             menu.created_dt = datetime.datetime.now()
-            menu.created_by = reqdata["created_by"]
+            menu.created_by = request.created_by
             menu.is_delete = constants.NO
             menu.is_inactive = constants.NO
 
@@ -106,16 +104,15 @@ class MenuService:
     def updateMenu(self, request, db):
         jsonStr = {}
         try:
-            reqdata = Request.form
             # self.log.info("Response "+str(jsonStr))
-            cd = reqdata["cd"]
+            cd = request.cd
             menu = db.query(Menu).get(cd)
-            menu.nm = reqdata["nm"]
-            menu.desc = reqdata["desc"]
-            menu.price = reqdata["price"]
-            menu.category_cd = reqdata["category_cd"]
+            menu.nm = request.nm
+            menu.desc = request.desc
+            menu.price = request.price
+            menu.category_cd = request.category_cd
             menu.updated_dt = datetime.datetime.now()
-            menu.updated_by = reqdata["updated_by"]
+            menu.updated_by = request.updated_by
 
             if "file" not in Request.files:
                 jsonStr["data"] = "No file"
@@ -167,7 +164,7 @@ class MenuService:
         jsonStr = {}
         try:
             # self.log.info("Request "+str(Request.json))
-            cd = Request.json["cd"]
+            cd = request.cd
             menu = db.query(Menu).get(cd)
             menu.updated_dt = datetime.datetime.now()
             menu.updated_by = Request.json["updated_by"]
@@ -189,9 +186,8 @@ class MenuService:
         jsonStr = {}
         try:
             # self.log.info("Request "+str(Request.json))
-            if "bill_cd" in Request.json:
-                bill_cd = Request.json["bill_cd"]
-            else:
+            bill_cd = request.bill_cd
+            if not bill_cd:
                 # self.log.exception(" MenuService")
                 jsonStr["isError"] = constants.YES
                 jsonStr["status"] = "Failed"
@@ -336,6 +332,7 @@ class MenuService:
                             menu_list_data["img"] = ""
                         menu_list_data["desc"] = mdl2.Menu.desc
                         menu_list_data["price"] = mdl2.Menu.price
+                        menu_list_data["discount"] = mdl2.Menu.discount
                         menu_list_data["category_cd"] = mdl2.Menu.category_cd
                         menu_list_data["created_dt"] = mdl2.Menu.created_dt
                         menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -343,6 +340,7 @@ class MenuService:
                         menu_list_data["is_delete"] = mdl2.Menu.is_delete
                         menu_list_data["updated_dt"] = mdl2.Menu.updated_dt
                         menu_list_data["updated_by"] = mdl2.Menu.updated_by
+
 
                         menu_list.append(menu_list_data)
 

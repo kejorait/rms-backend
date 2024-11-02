@@ -1,7 +1,7 @@
-from sqlalchemy import Column,String,Integer,DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, DateTime, Integer, String
 
-from models.base import DATEFIELDS, DeclarativeOrigin
+from models.base import DeclarativeOrigin
+
 
 class Menu(DeclarativeOrigin):
     __tablename__ = 'menu'
@@ -10,6 +10,7 @@ class Menu(DeclarativeOrigin):
     img = Column(String)
     desc = Column(String)
     price = Column(Integer)
+    discount = Column(Integer, default=0)
     category_cd = Column(String)
     created_dt = Column(DateTime)
     created_by = Column(String)

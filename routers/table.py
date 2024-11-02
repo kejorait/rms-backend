@@ -1,7 +1,9 @@
 import os
+
 from fastapi import APIRouter, Depends
-from helper.database import get_db
 from sqlalchemy.orm import Session
+
+from helper.database import get_db
 from models.request import table
 from services.table_activity import TableService
 
@@ -14,6 +16,10 @@ router = APIRouter(
 @router.post("/get")
 async def get_all_table(request: table.Get, db: Session = Depends(get_db)):
     return TableService().getAllTable(request, db)
+
+@router.post("/get-billiard")
+async def get_all_table_billiard(request: table.Get, db: Session = Depends(get_db)):
+    return TableService().getAllTableBilliard(request, db)
 
 @router.post("/create")
 async def create_table(request: table.Create, db: Session = Depends(get_db)):
@@ -30,3 +36,7 @@ async def delete_table(request: table.Delete, db: Session = Depends(get_db)):
 @router.post("/delete-bulk")
 async def delete_table_bulk(request: table.DeleteBulk, db: Session = Depends(get_db)):
     return TableService().deleteTableBulk(request, db)
+
+@router.post("/get-by-cd")
+def get_table_by_code(request: table.GetByCd, db: Session = Depends(get_db)):
+    return TableService().getTableByCode(request, db)

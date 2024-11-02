@@ -1,22 +1,17 @@
-import json
-from datetime import datetime
 import datetime as dt
-from shutil import copyfileobj
-from fastapi.responses import JSONResponse
-from rich.console import Console
-from models.menu import Menu
-from models.table import Table
-from models.role import Role
-from models.category import Category
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
-from utils.tinylog import getLogger, setupLog
-from uuid import uuid4
-from sqlalchemy import func
+import json
 import os
+from shutil import copyfileobj
+from uuid import uuid4
+
+from fastapi.responses import JSONResponse
+from sqlalchemy import func
 from werkzeug.utils import secure_filename
-from fastapi.requests import Request
-from fastapi import HTTPException
+
+from helper import constants
+from helper.jsonHelper import ExtendEncoder
+from models.category import Category
+from utils.tinylog import getLogger, setupLog
 
 
 class CategoryService:
@@ -247,7 +242,7 @@ class CategoryService:
             query = db.query(func.distinct(Category.cd), Category)
             query = query.filter(Category.is_delete == constants.NO)
             query = query.filter(Category.is_inactive == constants.NO)
-            query = query.filter(Category.cd == request.json["cd"])
+            query = query.filter(Category.cd == request.cd)
             row = query.all()
             # cd = row.cd
             db.close()

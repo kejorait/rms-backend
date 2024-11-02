@@ -192,7 +192,7 @@ class BillService:
                     data["table_nm"] = mdl.table_nm + " - " + mdl.Bill.user_nm
                 data["bill_dt"] = mdl.Bill.created_dt
                 data["bill_cd"] = mdl.Bill.cd
-                query = db.query(BillDtl.qty, Menu.price).select_from(BillDtl)
+                query = db.query(BillDtl.qty, BillDtl.price).select_from(BillDtl)
                 query = query.join(Menu, Menu.cd == BillDtl.menu_cd)
                 query = query.filter(BillDtl.bill_cd == mdl.Bill.cd)
                 # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))

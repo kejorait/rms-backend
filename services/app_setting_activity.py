@@ -1,22 +1,13 @@
-import json
-from datetime import datetime
 import datetime as dt
+from datetime import datetime
 
+import cups
 from fastapi.responses import JSONResponse
-from models.table import Table
-from models.bill import Bill
-from models.app_setting import AppSetting
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
-from utils.tinylog import getLogger, setupLog
-from uuid import uuid4
-from sqlalchemy import func,Integer
-from sqlalchemy.sql.expression import cast, and_
-import sqlalchemy
-from sqlalchemy.orm import aliased
-from fastapi import HTTPException
 
-import win32print
+from helper import constants
+from models.app_setting import AppSetting
+from utils.tinylog import getLogger, setupLog
+
 
 class AppSettingService:
     name = "app_setting"
@@ -77,14 +68,32 @@ class AppSettingService:
             # print(self.content)
             for key, value in request.data.items():
                 # print(key, value)
-                query = db.query(AppSetting).get(key)
-                query.value = value
-                query.updated_dt = dt.datetime.now()
-                query.updated_by = request.updated_by
+                query = db.query(AppSetting).filter(AppSetting.cd == key)
+                query = query.filter(AppSetting.is_delete == constants.NO)
+                query = query.filter(AppSetting.is_inactive == constants.NO)
+                query = query.first()
+
+                if not query:
+                    query = AppSetting()
+                    query.cd = key
+                    # query.nm = key replace _ with space, and caps lock
+                    query.nm = key.replace("_", " ").upper()
+                    query.created_dt = dt.datetime.now()
+                    query.created_by = request.updated_by
+                    query.value = value
+
+                    db.add(query)
+
+                else:
+                    query.value = value
+                    query.updated_dt = dt.datetime.now()
+                    query.updated_by = request.updated_by
 
             db.commit()
+
+            db.refresh(query)
             
-            jsonStr["data"] = request.data
+            jsonStr["data"] = query
             jsonStr["isError"] = constants.NO
             jsonStr["status"] = constants.STATUS_SUCCESS
             return jsonStr
@@ -96,6 +105,20 @@ class AppSettingService:
             response.status_code = 500
             return response
 
-    def getPrinters():
-        printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
-        return printers 
+    # def getPrinters():
+    #     printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
+    #     return printers 
+    
+    def getPrinters(self):
+        conn = cups.Connection()
+        # printers = [printer for printer in conn.getPrinters()]
+        # mock printer list windows
+        printers = ["Microsoft XPS Document Writer", "Microsoft Print to PDF", "Epson 1112"]
+        return printers
+    
+    def getSerialPorts(self):
+        conn = cups.Connection()
+        # printers = [printer for printer in conn.getPrinters()]
+        # mock printer list windows
+        printers = ["COM1", "COM2", "COM3"]
+        return printers
