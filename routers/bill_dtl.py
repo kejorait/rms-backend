@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from helper.database import get_db
 from models.request import bill_dtl as bill_dtl
 from services.bill_dtl_activity import BillDtlService
+from services.print_activity import PrintService
 
 router = APIRouter(
     prefix="/bill-dtl"
@@ -22,7 +23,11 @@ def get_bill_detail_by_cd(request: bill_dtl.GetByCd, db: Session = Depends(get_d
 
 @router.post("/print")
 def get_bill_detail_by_cd_print(request: bill_dtl.Print, db: Session = Depends(get_db)):
-    return BillDtlService().getBillDtlByBillCdPrint(request, db)
+    return PrintService().printBill(request, db)
+
+@router.post("/print-bill")
+def get_bill_detail_by_cd_print(request: bill_dtl.Print, db: Session = Depends(get_db)):
+    return BillDtlService().printBill(request, db)
 
 
 @router.post("/get-all-barista")

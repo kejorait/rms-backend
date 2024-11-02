@@ -20,10 +20,10 @@ class CategoryService:
     setupLog(serviceName=__file__)
 
     ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
-    UPLOADS_PATH = os.getenv("UPLOADS_PATH")
+    API_PREFIX = os.getenv("API_PREFIX")
     CATEGORY_PATH = os.getenv("CATEGORY_PATH")
-    CATEGORY_FOLDER = "./" + UPLOADS_PATH+ "/" + CATEGORY_PATH
-    CATEGORY_URL = os.getenv("HOST") + "/" + UPLOADS_PATH + "/" + CATEGORY_PATH + "/"
+    CATEGORY_FOLDER = "./" + "uploads" + "/" + CATEGORY_PATH
+    CATEGORY_URL = API_PREFIX + "/" + "uploads" + "/" + CATEGORY_PATH + "/"
 
     def __init__(self):
         self.log = getLogger(serviceName=__file__)
@@ -72,12 +72,7 @@ class CategoryService:
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
                     filename = (
-                        filename_data
-                        + "-"
-                        + datenow
-                        + "-"
-                        + timenow
-                        + filename_ext
+                        filename_data + "-" + datenow + "-" + timenow + filename_ext
                     )
                     filename = secure_filename(filename)
                     self.log.info(filename)
@@ -96,14 +91,21 @@ class CategoryService:
         except Exception as ex:
             # self.log.exception(" UserService")
             self.log.error(ex)
-            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
+            response = JSONResponse(
+                status_code=500,
+                content={
+                    "data": str(ex),
+                    "isError": constants.YES,
+                    "status": constants.STATUS_FAILED,
+                },
+            )
             return response
 
         return jsonStr
 
     def updateCategory(self, request, db):
         jsonStr = {}
-        
+
         try:
             # self.log.info("Response "+str(jsonStr))
             reqdata = request
@@ -135,12 +137,7 @@ class CategoryService:
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
                     filename = (
-                        filename_data
-                        + "-"
-                        + datenow
-                        + "-"
-                        + timenow
-                        + filename_ext
+                        filename_data + "-" + datenow + "-" + timenow + filename_ext
                     )
                     filename = secure_filename(filename)
                     self.log.info(filename)
@@ -158,14 +155,21 @@ class CategoryService:
         except Exception as ex:
             # self.log.exception(" UserService")
             self.log.error(ex)
-            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
+            response = JSONResponse(
+                status_code=500,
+                content={
+                    "data": str(ex),
+                    "isError": constants.YES,
+                    "status": constants.STATUS_FAILED,
+                },
+            )
             return response
 
         return jsonStr
 
     def deleteCategory(self, request, db):
         jsonStr = {}
-        
+
         try:
             # self.log.info("Response "+str(jsonStr))
 
@@ -201,6 +205,8 @@ class CategoryService:
             query = db.query(func.distinct(Category.cd), Category)
             query = query.filter(Category.is_delete == constants.NO)
             query = query.filter(Category.is_inactive == constants.NO)
+            if request.search:
+                query = query.filter(Category.nm.ilike ("%{}%".format(request.search)))
             query = query.order_by(Category.nm.asc())
             row = query.all()
             # cd = row.cd
@@ -237,41 +243,31 @@ class CategoryService:
     def getCategoryByCd(self, request, db):
         jsonStr = {}
         try:
-            # self.log.info("Response "+str(jsonStr))
+            # Log initial processing
+            # self.log.info("Processing request for category with cd: %s", request.cd)
 
-            query = db.query(func.distinct(Category.cd), Category)
-            query = query.filter(Category.is_delete == constants.NO)
-            query = query.filter(Category.is_inactive == constants.NO)
-            query = query.filter(Category.cd == request.cd)
-            row = query.all()
-            # cd = row.cd
-            db.close()
+            # Query the database for categories matching the conditions
+            query = db.query(Category).filter(
+                Category.is_delete == constants.NO,
+                Category.is_inactive == constants.NO,
+                Category.cd == request.cd,
+            )
+            rows = query.first()
 
-            res = {}
+            listData = {}
+            listData.update(json.loads(json.dumps(rows, cls=ExtendEncoder)))
+            listData["img"] = self.CATEGORY_URL + listData["img"]
 
-            listData = []
-            for mdl in row:
-                data_list = {}
-                data_list["cd"] = mdl.Category.cd
-                data_list["nm"] = mdl.Category.nm
-                if mdl.Category.img:
-                    data_list["img"] = self.CATEGORY_URL + mdl.Category.img
-                else:
-                    data_list["img"] = ""
-                data_list["is_drink"] = mdl.Category.is_drink
-                data_list["created_dt"] = mdl.Category.created_dt
-                data_list["created_by"] = mdl.Category.created_by
-                data_list["updated_dt"] = mdl.Category.created_dt
-                data_list["updated_by"] = mdl.Category.created_by
-                listData.append(data_list)
-
-            res["data"] = listData
-            res["status"] = "Success"
-            res["isError"] = constants.NO
+            # Construct response
+            res = {"data": listData, "status": "Success", "isError": constants.NO}
             jsonStr = res
-            # self.log.info("Response " + str(jsonStr))
+            # self.log.info("Response: %s", jsonStr)
+            return jsonStr
+
         except Exception as ex:
-            self.log.exception(" RoleService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
+            # Log the exception details
+            self.log.exception("An error occurred in getCategoryByCd")
+
+            # Handle the exception response
+            jsonStr = {"isError": constants.YES, "status": "Failed"}
         return jsonStr

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 
 class Get(BaseModel):
-    None
+    search: Optional[str] | None = Field(default=None, examples=["category"])
 
 class GetDtl(BaseModel):
     cd : str | None = Field(default=None, examples=["50c29efd3e4947a58bc8b48fc5a33817"])

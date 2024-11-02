@@ -1,22 +1,19 @@
-import json
-import os
 import datetime as dt
+import os
 from datetime import datetime
+from itertools import groupby
+from shutil import copyfileobj
+from uuid import uuid4
+
+import bcrypt
+from dotenv import load_dotenv
+from werkzeug.utils import secure_filename
+
+from helper import constants
+from models.role import Role
 from models.user import User
 from models.user_credential import UserCredential
-from models.role import Role
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
 from utils.tinylog import getLogger, setupLog
-from flask import request
-from uuid import uuid4
-from werkzeug.utils import secure_filename
-import bcrypt
-from itertools import groupby
-import dotenv
-from dotenv import load_dotenv
-from fastapi.requests import Request
-from fastapi import HTTPException
 
 
 class UserService:
@@ -25,9 +22,10 @@ class UserService:
     load_dotenv()
 
     ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
+    API_PREFIX = os.getenv("API_PREFIX")
     USER_PATH = os.getenv("USER_PATH")
-    USER_FOLDER = "./" + USER_PATH
-    USER_URL = os.getenv("HOST") + "/" + USER_PATH + "/"
+    USER_FOLDER = "./" + "uploads" + "/" + USER_PATH
+    USER_URL = API_PREFIX + "/" + "uploads" + "/" + USER_PATH + "/"
 
     def __init__(self):
         self.log = getLogger(serviceName=__file__)
@@ -47,8 +45,7 @@ class UserService:
             # print(vars(request.json))
             role = request.role
 
-            query = db.query(User,
-                                     Role)
+            query = db.query(User, Role)
             query = query.join(Role, User.role_cd == Role.cd)
             query = query.group_by(User.cd)
             query = query.group_by(Role.cd)
@@ -62,7 +59,7 @@ class UserService:
 
             res = {}
 
-            listData = []   
+            listData = []
             for mdl in data:
                 data_list = {}
                 data_list["cd"] = mdl.User.cd
@@ -199,12 +196,13 @@ class UserService:
     # Create User
     def addUser(self, request, db):
         jsonStr = {}
-        
+
         try:
-            reqdata = Request.form
             # self.log.info("Response "+str(jsonStr))
             query = db.query(User.username)
-            query = query.filter(User.username == reqdata["username"])
+            query = query.filter(User.username == request.username)
+            query = query.filter(User.is_delete == constants.NO)
+            query = query.filter(User.is_inactive == constants.NO)
             row = query.first()
             if row:
                 self.log.exception(" UserService")
@@ -218,26 +216,18 @@ class UserService:
                 user = User()
 
                 user.cd = user_cd
-                user.name = reqdata["name"]
-                user.username = reqdata["username"]
-                user.role_cd = reqdata["role_cd"]
+                user.name = request.name
+                user.username = request.username
+                user.role_cd = request.role_cd
                 user.created_dt = dt.datetime.now()
-                user.created_by = reqdata["created_by"]
+                user.created_by = request.created_by
                 user.is_delete = constants.NO
                 user.is_inactive = constants.NO
                 user.is_resign = constants.NO
-                if "file" not in Request.files:
-                    jsonStr["data"] = "No file"
-                    jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
+                if request.file is None:
+                    user.img = None
                 else:
-                    file = Request.files["file"]
-                    # if user does not select file, browser also
-                    # submit a empty part without filename
-                    if file.filename == "":
-                        jsonStr["data"] = "No selected file"
-                        jsonStr["isError"] = constants.NO
-                        jsonStr["status"] = "Success"
+                    file = request.file
                     if file and self.allowed_file(file.filename):
                         # self.log.info(file.filename)
                         filename = str(file.filename)
@@ -251,7 +241,10 @@ class UserService:
                         )
                         filename = secure_filename(filename)
                         # self.log.info(filename)
-                        file.save(os.path.join(self.USER_FOLDER, filename))
+                        file_path = os.path.join(self.USER_FOLDER, filename)
+                        with open(file_path, "wb") as buffer:
+                            # Copy the file contents into the buffer
+                            copyfileobj(file.file, buffer)
                         jsonStr["data"] = "Success"
                         jsonStr["isError"] = constants.NO
                         jsonStr["status"] = "Success"
@@ -262,7 +255,7 @@ class UserService:
                 userCredential.cd = uuid4().hex
 
                 userCredential.user_cd = user_cd
-                password = reqdata["password"].encode("utf8")
+                password = request.password.encode("utf8")
                 self.log.info(password)
                 userCredential.password = bcrypt.hashpw(
                     password, bcrypt.gensalt()
@@ -289,30 +282,20 @@ class UserService:
     def updateUser(self, request, db):
         jsonStr = {}
         try:
-            reqdata = Request.form
             # self.log.info(reqdata)
             # self.log.info("Response "+str(jsonStr))
-            user_cd = reqdata["cd"]
+            user_cd = request.cd
             user = db.query(User).get(user_cd)
-            user.name = reqdata["name"]
-            user.username = reqdata["username"]
-            user.role_cd = reqdata["role_cd"]
+            user.name = request.name
+            user.username = request.username
+            user.role_cd = request.role_cd
             user.updated_dt = dt.datetime.now()
-            user.updated_by = reqdata["updated_by"]
-            if "file" not in Request.files:
-                jsonStr["data"] = "No file"
-                jsonStr["isError"] = constants.NO
-                jsonStr["status"] = "Success"
+            user.updated_by = request.updated_by
+            if request.file is None:
+                user.img = None
             else:
-                file = Request.files["file"]
-                # if user does not select file, browser also
-                # submit a empty part without filename
-                if file.filename == "":
-                    jsonStr["data"] = "No selected file"
-                    jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
+                file = request.file
                 if file and self.allowed_file(file.filename):
-                    # self.log.info(file.filename)
                     filename = str(file.filename)
                     filename_data = filename[:-4]
                     filename_ext = filename[-4:]
@@ -323,11 +306,14 @@ class UserService:
                         filename_data + "-" + datenow + "-" + timenow + filename_ext
                     )
                     filename = secure_filename(filename)
-                    # self.log.info(filename)
-                    file.save(os.path.join(self.USER_FOLDER, filename))
-                    jsonStr["data"] = "Success"
+                    self.log.info(filename)
+                    file_path = os.path.join(self.USER_FOLDER, filename)
+                    with open(file_path, "wb") as buffer:
+                        # Copy the file contents into the buffer
+                        copyfileobj(file.file, buffer)
+                    jsonStr["data"] = request
                     jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
+                    jsonStr["status"] = constants.STATUS_SUCCESS
                     user.img = filename
             db.commit()
 
@@ -337,7 +323,7 @@ class UserService:
             data = query.first()
             usercredcd = data.cd
             userCredential = db.query(UserCredential).get(usercredcd)
-            password = reqdata["password"].encode("utf8")
+            password = request.password.encode("utf8")
             self.log.info(password)
             userCredential.password = bcrypt.hashpw(password, bcrypt.gensalt()).decode(
                 "utf8"

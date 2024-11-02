@@ -227,18 +227,37 @@ class TableService:
         jsonStr = {}
         
         try:
-            table = Table()
-            table.cd = uuid4().hex
-            table.nm = request.nm
-            table.desc = request.desc
-            table.is_billiard = request.is_billiard
-            table.created_dt = dt.datetime.now()
-            table.created_by = request.created_by
-            table.is_delete = constants.NO
-            table.is_inactive = constants.NO
+            if request.nm.isdigit():
+                query = db.query(Table)
+                query = query.filter(Table.nm == request.nm)
+                query = query.filter(Table.is_delete == constants.NO)
+                query = query.filter(Table.is_inactive == constants.NO)
+                query = query.filter(Table.is_billiard == request.is_billiard)
+                row = query.first()
 
-            db.add(table)
-            db.commit()
+                if row:
+                    jsonStr["data"] = {"exists": True}
+                    jsonStr["isError"] = constants.NO
+                    jsonStr["status"] = "Success"
+                    return jsonStr
+                else:
+                    table = Table()
+                    table.cd = uuid4().hex
+                    table.nm = request.nm
+                    table.desc = request.desc
+                    table.is_billiard = request.is_billiard
+                    table.created_dt = dt.datetime.now()
+                    table.created_by = request.created_by
+                    table.is_delete = constants.NO
+                    table.is_inactive = constants.NO
+
+                    db.add(table)
+                    db.commit()
+            else:
+                jsonStr["data"] = "Table name must be a number"
+                jsonStr["isError"] = constants.YES
+                jsonStr["status"] = "Failed"
+                return jsonStr
             
             jsonStr["data"] = {"cd": table.cd}
             jsonStr["isError"] = constants.NO
@@ -259,22 +278,40 @@ class TableService:
         jsonStr = {}
         try:
             # self.log.info("Response "+str(jsonStr))
-            cd = request.cd
-            table = db.query(Table).get(cd)
-            table.nm = request.nm
-            table.desc = request.desc
-            table.is_billiard = request.is_billiard
-            table.updated_dt = dt.datetime.now()
-            table.updated_by = request.updated_by
+            if request.nm.isdigit():
+                query = db.query(Table)
+                query = query.filter(Table.nm == request.nm)
+                query = query.filter(Table.is_delete == constants.NO)
+                query = query.filter(Table.is_inactive == constants.NO)
+                query = query.filter(Table.is_billiard == request.is_billiard)
+                row = query.first()
 
-            table_obj = table
-            table_obj = json.loads(json.dumps(table_obj, cls=ExtendEncoder))
-            db.commit()
+                if row.cd != request.cd:
+                    jsonStr["data"] = {"exists": True}
+                    jsonStr["isError"] = constants.NO
+                    jsonStr["status"] = "Success"
+                    return jsonStr
 
-            jsonStr["data"] = table_obj
-            jsonStr["isError"] = constants.NO
-            jsonStr["status"] = constants.STATUS_SUCCESS
+                cd = request.cd
+                table = db.query(Table).get(cd)
+                table.nm = request.nm
+                table.desc = request.desc
+                table.is_billiard = request.is_billiard
+                table.updated_dt = dt.datetime.now()
+                table.updated_by = request.updated_by
 
+                table_obj = table
+                table_obj = json.loads(json.dumps(table_obj, cls=ExtendEncoder))
+                db.commit()
+
+                jsonStr["data"] = table_obj
+                jsonStr["isError"] = constants.NO
+                jsonStr["status"] = constants.STATUS_SUCCESS
+            else:
+                jsonStr["data"] = "Table name must be a number"
+                jsonStr["isError"] = constants.YES
+                jsonStr["status"] = "Failed"
+                return jsonStr
         except Exception as ex:
             self.log.exception(" MenuService")
             jsonStr["data"] = str(ex)

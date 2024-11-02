@@ -14,7 +14,7 @@ class GetByCd(BaseModel):
 
 class Print(BaseModel):
     bill_cd: Optional[str] = Field(None, example="ABC123")
-
+    print_to_printer: Optional[bool] = Field(False, example=True)
 
 class FromToDt(BaseModel):
     from_dt: Optional[date] = Field(None, example="2024-01-01")
@@ -41,6 +41,7 @@ class CreateBulkDetail(BaseModel):
 
 class CreateBulk(BaseModel):
     bill_cd: Optional[str] = Field(None, example="9f47f518-33a3-4be9-9b9a-e829bf0721f5")
+    print_to_printer: Optional[bool] = Field(False, example=True)
     orders: Optional[List[CreateBulkDetail]] = None
 
 

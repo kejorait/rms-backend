@@ -31,9 +31,13 @@ class Close(BaseModel):
 class Paid(BaseModel):
     cd: str = Field(..., example="eac51a0464334c25b2b3eca27ae5792a")
     paid_type: Optional[str] = Field(None, example="CASH")
-    bill_total: Optional[int] = Field(None, example=10000)
+    bill_total: Optional[float] = Field(None, example=10000)
     paid_amount: Optional[int] = Field(None, example=10000)
     paid_by: Optional[str] = Field(None, example="system")
+    billiard_total: Optional[float] = Field(None, example=10000)
+    price: Optional[int] = Field(None, example=10000)
+    closed_dt: Optional[str] = Field(None, example="system")
+    amount: Optional[int] = Field(None, example="1691219")
 
 class FromToDt(BaseModel):
     from_dt: Optional[datetime] = Field(None, example="1691219")

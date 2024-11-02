@@ -1,13 +1,15 @@
 import datetime
+import json
 import os
+from shutil import copyfileobj
 from uuid import uuid4
 
 from dotenv import load_dotenv
-from fastapi.requests import Request
 from fastapi.responses import JSONResponse
 from werkzeug.utils import secure_filename
 
 from helper import constants
+from helper.jsonHelper import ExtendEncoder
 from models.bill import Bill
 from models.category import Category
 from models.menu import Menu
@@ -24,9 +26,10 @@ class MenuService:
     setupLog(serviceName=__file__)
 
     ALLOWED_EXTENSIONS = set(["png", "jpg", "jpeg"])
+    API_PREFIX = os.getenv("API_PREFIX")
     MENU_PATH = os.getenv("MENU_PATH")
-    MENU_FOLDER = "./" + MENU_PATH
-    MENU_URL = os.getenv("HOST") + "/" + MENU_PATH + "/"
+    MENU_FOLDER = "./"+ "uploads" + "/" + MENU_PATH
+    MENU_URL = API_PREFIX + "/" + "uploads" + "/" + MENU_PATH + "/"
 
     def __init__(self):
         self.log = getLogger(serviceName=__file__)
@@ -41,7 +44,7 @@ class MenuService:
     def addMenu(self, request, db):
         jsonStr = {}
         try:
-            
+
             # self.log.info("Response "+str(jsonStr))
             menu = Menu()
             menu.cd = uuid4().hex
@@ -54,19 +57,14 @@ class MenuService:
             menu.created_by = request.created_by
             menu.is_delete = constants.NO
             menu.is_inactive = constants.NO
+            menu.discount = request.discount
+            menu.is_drink = request.is_drink
+            menu.stock = request.stock
 
-            if "file" not in Request.files:
-                jsonStr["data"] = "No file"
-                jsonStr["isError"] = constants.NO
-                jsonStr["status"] = "Success"
+            if request.file is None:
+                menu.img = None
             else:
-                file = Request.files["file"]
-                # if user does not select file, browser also
-                # submit a empty part without filename
-                if file.filename == "":
-                    jsonStr["data"] = "No selected file"
-                    jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
+                file = request.file
                 if file and self.allowed_file(file.filename):
                     filename = str(file.filename)
                     filename_data = filename[:-4]
@@ -85,7 +83,10 @@ class MenuService:
                     )
                     filename = secure_filename(filename)
                     self.log.info(filename)
-                    file.save(os.path.join(self.MENU_FOLDER, filename))
+                    file_path = os.path.join(self.MENU_FOLDER, filename)
+                    with open(file_path, "wb") as buffer:
+                        # Copy the file contents into the buffer
+                        copyfileobj(file.file, buffer)
                     jsonStr["data"] = "Success"
                     jsonStr["isError"] = constants.NO
                     jsonStr["status"] = "Success"
@@ -93,12 +94,19 @@ class MenuService:
 
             db.add(menu)
             db.commit()
+            db.refresh(menu)
 
         except Exception as ex:
             self.log.error(ex)
-            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
+            response = JSONResponse(
+                status_code=500,
+                content={"data": str(ex), "isError": constants.YES, "status": "Failed"},
+            )
             response.status_code = 500
             return response
+        jsonStr["isError"] = constants.NO
+        jsonStr["status"] = "Success"
+        jsonStr["data"] = json.loads(json.dumps(menu, cls=ExtendEncoder))
         return jsonStr
 
     def updateMenu(self, request, db):
@@ -113,13 +121,14 @@ class MenuService:
             menu.category_cd = request.category_cd
             menu.updated_dt = datetime.datetime.now()
             menu.updated_by = request.updated_by
+            menu.is_drink = request.is_drink
+            menu.discount = request.discount
+            menu.stock = request.stock
 
-            if "file" not in Request.files:
-                jsonStr["data"] = "No file"
-                jsonStr["isError"] = constants.NO
-                jsonStr["status"] = "Success"
+            if request.file is None:
+                menu.img = None
             else:
-                file = Request.files["file"]
+                file = request.file
                 # if user does not select file, browser also
                 # submit a empty part without filename
                 if file.filename == "":
@@ -144,20 +153,31 @@ class MenuService:
                     )
                     filename = secure_filename(filename)
                     self.log.info(filename)
-                    file.save(os.path.join(self.MENU_FOLDER, filename))
+                    file_path = os.path.join(self.MENU_FOLDER, filename)
+                    with open(file_path, "wb") as buffer:
+                        # Copy the file contents into the buffer23
+                        copyfileobj(file.file, buffer)
                     jsonStr["data"] = "Success"
                     jsonStr["isError"] = constants.NO
                     jsonStr["status"] = "Success"
                     menu.img = filename
 
             db.commit()
+            db.refresh(menu)
 
         except Exception as ex:
             self.log.error(ex)
-            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": "Failed"})
+            response = JSONResponse(
+                status_code=500,
+                content={"data": str(ex), "isError": constants.YES, "status": "Failed"},
+            )
             response.status_code = 500
             return response
         # self.log.info("Response "+str(jsonStr))
+        jsonStr["isError"] = constants.NO
+        jsonStr["status"] = "Success"
+        jsonStr["data"] = json.loads(json.dumps(menu, cls=ExtendEncoder))
+
         return jsonStr
 
     def deleteMenu(self, request, db):
@@ -167,7 +187,7 @@ class MenuService:
             cd = request.cd
             menu = db.query(Menu).get(cd)
             menu.updated_dt = datetime.datetime.now()
-            menu.updated_by = Request.json["updated_by"]
+            menu.updated_by = request.updated_by
             menu.is_delete = constants.YES
 
             db.commit()
@@ -255,6 +275,8 @@ class MenuService:
                                 menu_list_data["img"] = ""
                             menu_list_data["desc"] = mdl2.Menu.desc
                             menu_list_data["price"] = mdl2.Menu.price
+                            menu_list_data["discount"] = mdl2.Menu.discount
+                            menu_list_data["stock"] = mdl2.Menu.stock
                             menu_list_data["category_cd"] = mdl2.Menu.category_cd
                             menu_list_data["created_dt"] = mdl2.Menu.created_dt
                             menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -333,6 +355,7 @@ class MenuService:
                         menu_list_data["desc"] = mdl2.Menu.desc
                         menu_list_data["price"] = mdl2.Menu.price
                         menu_list_data["discount"] = mdl2.Menu.discount
+                        menu_list_data["stock"] = mdl2.Menu.stock
                         menu_list_data["category_cd"] = mdl2.Menu.category_cd
                         menu_list_data["created_dt"] = mdl2.Menu.created_dt
                         menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -340,7 +363,6 @@ class MenuService:
                         menu_list_data["is_delete"] = mdl2.Menu.is_delete
                         menu_list_data["updated_dt"] = mdl2.Menu.updated_dt
                         menu_list_data["updated_by"] = mdl2.Menu.updated_by
-
 
                         menu_list.append(menu_list_data)
 
@@ -391,6 +413,8 @@ class MenuService:
                 data_list["img"] = ""
             data_list["desc"] = data.Menu.desc
             data_list["price"] = data.Menu.price
+            data_list["discount"] = data.Menu.discount
+            data_list["stock"] = data.Menu.stock
             data_list["category_cd"] = data.Menu.category_cd
             data_list["created_dt"] = data.Menu.created_dt
             data_list["created_by"] = data.Menu.created_by
@@ -409,7 +433,14 @@ class MenuService:
             jsonStr = res
         except Exception as ex:
             self.log.error(ex)
-            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
+            response = JSONResponse(
+                status_code=500,
+                content={
+                    "data": str(ex),
+                    "isError": constants.YES,
+                    "status": constants.STATUS_FAILED,
+                },
+            )
             return response
         # self.log.info("Response "+str(jsonStr))
         return jsonStr

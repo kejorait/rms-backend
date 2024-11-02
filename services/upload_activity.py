@@ -1,8 +1,9 @@
+import base64
 import json
 from datetime import datetime
 import datetime as dt
 import os
-
+from io import BytesIO
 from fastapi.responses import JSONResponse, FileResponse
 from models.table import Table
 from models.bill import Bill
@@ -45,6 +46,26 @@ class UploadActivity:
 
         file_path_ico = LOGO_FILE_PATH + ".ico"
         file_path_png = LOGO_FILE_PATH + ".png"
+
+        # Convert the image to a BytesIO object
+        buffered = BytesIO()
+        image.save(buffered, format="PNG")  # or use "PNG" if your image is in PNG format
+
+        # Encode the image to Base64
+        base64_string = base64.b64encode(buffered.getvalue()).decode()
+        query = db.query(AppSetting)
+        query = query.filter(AppSetting.cd == "logo_base64")
+        data = query.first()
+        if data:
+            data.value = base64_string
+        else:
+            data = AppSetting(
+                cd="logo_base64",
+                value=base64_string,
+                created_dt=datetime.now(),
+                created_by="system",
+            )
+        db.commit()
 
         try:
             image.save(file_path_ico, format="ICO")

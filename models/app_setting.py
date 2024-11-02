@@ -13,5 +13,5 @@ class AppSetting(DeclarativeOrigin):
     created_by = Column(String)
     updated_dt = Column(DateTime)
     updated_by = Column(String)
-    is_inactive = Column(String)
-    is_delete = Column(String)
+    is_inactive = Column(String, default='N')
+    is_delete = Column(String, default='N')

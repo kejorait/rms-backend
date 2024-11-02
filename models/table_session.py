@@ -19,5 +19,5 @@ class TableSession(DeclarativeOrigin):
     closed_by = Column(String)
     user_nm = Column(String)
     bill_cd = Column(String)
-    serial_sent = Column(String, default='N')  # Set default value to 'N'
+    price = Column(Integer, default=0)
     

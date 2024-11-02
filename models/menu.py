@@ -11,6 +11,7 @@ class Menu(DeclarativeOrigin):
     desc = Column(String)
     price = Column(Integer)
     discount = Column(Integer, default=0)
+    stock = Column(Integer, default=0)
     category_cd = Column(String)
     created_dt = Column(DateTime)
     created_by = Column(String)

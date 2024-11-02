@@ -25,3 +25,7 @@ def table_session_close(request: table_session.Close, db: Session = Depends(get_
 @router.post("/fixed")
 def table_session_fixed(request: table_session.Fixed, db: Session = Depends(get_db)):
     return TableSessionService().tableSessionFixed(request, db)
+
+@router.post("/sync")
+def table_session_sync(request: table_session.Sync, db: Session = Depends(get_db)):
+    return TableSessionService().tableSessionSync(request, db)

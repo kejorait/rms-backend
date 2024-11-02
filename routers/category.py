@@ -20,7 +20,7 @@ def GetAllCategory(request: category.Get, db: Session = Depends(get_db)):
 
 @router.post("/get-by-cd")
 def GetCategoryByCd(request: category.GetDtl, db: Session = Depends(get_db)):
-    return CategoryService().getCategoryByCd
+    return CategoryService().getCategoryByCd(request, db)
 
 
 @router.post("/create")

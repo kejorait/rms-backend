@@ -7,6 +7,7 @@ from models.bill import Bill
 from models.bill_dtl import BillDtl
 from models.menu import Menu
 from models.table import Table
+from models.table_session import TableSession
 from models.waiting_list import WaitingList
 from utils.tinylog import getLogger, setupLog
 
@@ -130,14 +131,38 @@ class BillService:
         try:
             # self.log.info("Response "+str(jsonStr))
             cd = request.cd
+
             bill = db.query(Bill).get(cd)
-            bill.paid_type = request.paid_type
-            bill.paid_amount = request.paid_amount
-            bill.bill_total = request.bill_total
-            bill.paid_change = request.bill_total - request.paid_amount
-            bill.is_paid = constants.YES
-            bill.paid_by = request.paid_by
-            bill.paid_dt = dt.datetime.now()
+
+
+            if request.bill_total:
+                if request.bill_total>0:
+                    bill.paid_type = request.paid_type
+                    bill.paid_amount = request.paid_amount
+                    bill.bill_total = request.bill_total
+                    bill.paid_change = request.bill_total - request.paid_amount
+                    bill.is_paid = constants.YES
+                    bill.paid_by = request.paid_by
+                    bill.paid_dt = dt.datetime.now()
+
+            if request.billiard_total:
+                if request.billiard_total>0:
+                    bill.billiard_is_paid = constants.YES
+                    bill.billiard_closed_dt = request.closed_dt
+                    bill.billiard_total = request.billiard_total
+                    bill.billiard_amount = request
+                    bill.grand_total = request.bill_total + request.billiard_total
+                    bill.billiard_price = request.price
+                    bill.billiard_paid_dt = dt.datetime.now()
+                    bill.biliard_paid_by = request.paid_by
+
+                    query = db.query(TableSession.cd).filter(TableSession.bill_cd == cd)
+                    table_session = query.all()
+
+                    for tbs in table_session:
+                        query = db.query(TableSession).get(tbs.cd)
+                        query.is_paid = constants.YES
+                        
 
             db.commit()
 

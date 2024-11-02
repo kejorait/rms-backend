@@ -1,8 +1,9 @@
 import datetime as dt
 from datetime import datetime
 
-import cups
+# import cups
 from fastapi.responses import JSONResponse
+import win32print
 
 from helper import constants
 from models.app_setting import AppSetting
@@ -105,16 +106,16 @@ class AppSettingService:
             response.status_code = 500
             return response
 
-    # def getPrinters():
-    #     printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
-    #     return printers 
-    
     def getPrinters(self):
-        conn = cups.Connection()
-        # printers = [printer for printer in conn.getPrinters()]
-        # mock printer list windows
-        printers = ["Microsoft XPS Document Writer", "Microsoft Print to PDF", "Epson 1112"]
-        return printers
+        printers = [printer[2] for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
+        return printers 
+    
+    # def getPrinters(self):
+    #     conn = cups.Connection()
+    #     # printers = [printer for printer in conn.getPrinters()]
+    #     # mock printer list windows
+    #     printers = ["Microsoft XPS Document Writer", "Microsoft Print to PDF", "Epson 1112"]
+    #     return printers
     
     def getSerialPorts(self):
         conn = cups.Connection()

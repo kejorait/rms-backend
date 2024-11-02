@@ -5,6 +5,7 @@ from fastapi.requests import Request
 
 from helper import constants
 from models.bill import Bill
+from models.table import Table
 from models.table_session import TableSession
 from utils.tinylog import getLogger, setupLog
 
@@ -59,9 +60,31 @@ class TableSessionService:
                     table_session.is_open = constants.YES
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
-                    table_session.serial_sent = constants.NO
+                    table_session.price = request.price
 
                     db.add(table_session)
+
+                    query = db.query(Table)
+                    query = query.filter(Table.cd == request.table_cd)
+                    table = query.first()
+
+                    table.serial_status = 'ON'
+                    table.serial_sent = constants.NO
+                    table.serial_off_dt = None
+                    # query = db.query(AppSetting.value)
+                    # query = query.filter(AppSetting.cd == 'com_port')
+                    # com_port = query.first()
+                    
+                    # number = re.search(r'\d+', table.nm)
+                    # number = int(number.group()) if number else 0
+
+                    # ser = serial.Serial(com_port.value, '9600', timeout=1)
+
+                    # ser.write(("RELAY " + str(number) + " ON" + '\n').encode())  # Send command
+                    # time.sleep(0.5)  # Wait for the Arduino to process the command
+                    # response = ser.read_all().decode().strip()  # Read the response
+                    # print(f"Command: RELAY {number} ON\n")
+                    # print(f"Response: {response}\n")
                     db.commit()
 
                     jsonStr["data"] = {"cd": table_session.cd}
@@ -127,9 +150,18 @@ class TableSessionService:
                     table_session.is_open = constants.NO
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
-                    table_session.serial_sent = constants.NO
+                    table_session.price = request.price
 
                     db.add(table_session)
+
+                    query = db.query(Table)
+                    query = query.filter(Table.cd == request.table_cd)
+                    table = query.first()
+
+                    table.serial_status = 'ON'
+                    table.serial_sent = constants.NO
+                    table.serial_off_dt = dt.datetime.now()+dt.timedelta(seconds=int(request.amount))
+
                     db.commit()
 
                     jsonStr["data"] = {"cd": table_session.cd}
@@ -166,6 +198,42 @@ class TableSessionService:
             table_session.is_closed = constants.YES
             table_session.closed_dt = dt.datetime.now()
             table_session.closed_by = request.closed_by
+
+            table = db.query(Table).get(request.table_cd)
+            table.serial_status = 'OFF'
+            table.serial_off_dt = dt.datetime.now()
+
+            db.commit()
+
+            jsonStr["data"] = constants.STATUS_SUCCESS
+            jsonStr["isError"] = constants.NO
+            jsonStr["status"] = "Success"
+
+        except Exception as ex:
+            self.log.exception(" TableSessionService")
+            jsonStr["isError"] = constants.YES
+            jsonStr["status"] = "Failed"
+            return jsonStr, 500
+        # self.log.info("Response " + str(jsonStr))
+
+        return jsonStr
+
+    def tableSessionSync(self, request, db):
+        jsonStr = {}
+        
+        try:
+            query = db.query(Table.cd)
+            query = query.filter(Table.is_billiard == constants.YES)
+            query = query.filter(Table.is_inactive == constants.NO)
+            query = query.filter(Table.is_delete == constants.NO)
+            tables = query.all()
+
+            for table in tables:
+                table_data = db.query(Table).get(table.cd)
+
+                table_data.serial_sent = constants.NO
+
+                table_data.sent_closed = constants.NO
 
             db.commit()
 

@@ -1,13 +1,14 @@
 import datetime as dt
 import json
+import re
 from datetime import datetime
 from uuid import uuid4
 
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import Integer, func
+from sqlalchemy import func
 from sqlalchemy.orm import aliased
-from sqlalchemy.sql.expression import and_, cast
+from sqlalchemy.sql.expression import and_
 
 from helper import constants
 from helper.jsonHelper import ExtendEncoder
@@ -97,7 +98,7 @@ class DiningTableService:
             ).filter(subquery_alias.c.row_num == 1)
 
             # Order by cast table.cd as integer
-            query = query.order_by(cast(subquery_alias.c.cd, Integer).asc())
+            # query = query.order_by(cast(subquery_alias.c.cd, Integer).asc())
 
             # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
             data = query.all()
@@ -110,6 +111,9 @@ class DiningTableService:
                 data_list = {}
                 data_list["cd"] = mdl.cd
                 data_list["nm"] = mdl.nm
+                number = re.search(r'\d+', mdl.nm)
+                number = int(number.group()) if number else 0
+                data_list["no"] = number
                 data_list["desc"] = mdl.desc
                 data_list["is_billiard"] = mdl.is_billiard
 
@@ -151,6 +155,7 @@ class DiningTableService:
                 data_list["status"] = status
                 listData.append(data_list)
 
+            listData = sorted(listData, key=lambda k: k['no'])
             res["data"] = listData
             res["status"] = "Success"
             res["isError"] = constants.NO
