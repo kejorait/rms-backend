@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-from routers import bill, bill_dtl, menu, stock, table_session, user, auth, table, waiting_list, category, role, app_setting, uploads
-
+from routers import (app_setting, auth, bill, bill_dtl, category, dining_table,
+                     menu, role, stock, table, table_session, uploads, user,
+                     waiting_list)
 
 router = APIRouter(
     prefix="/api/v1"
@@ -37,3 +38,5 @@ router.include_router(uploads.router)
 router.include_router(stock.router)
 
 router.include_router(table_session.router)
+
+router.include_router(dining_table.router)

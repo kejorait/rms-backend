@@ -1,24 +1,48 @@
 import os
+import re
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, Response
 
 os.makedirs("./logs", exist_ok=True)
 import router
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = FastAPI()
 # Set up CORS for development environment
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+allowed_origin_patterns = [
+    r"^http?://localhost(:[0-9]+)?$",
+    r"^https?://([a-zA-Z0-9-]+\.)*kejora\.my\.id(:[0-9]+)?$",
+    r"^https://rms-admin-sigma\.vercel\.app$",
+    r"http://100.92.3.3:5173",
+    r"http://100.78.150.123:5000",
+    r"https://sweet-pothos-bf131d.netlify.app"
+]
+@app.middleware("http")
+async def cors_middleware(request: Request, call_next):
+    origin = request.headers.get("origin")
+
+    # Handle CORS preflight request for OPTIONS
+    if request.method == "OPTIONS" and origin and any(re.match(pattern, origin) for pattern in allowed_origin_patterns):
+        response = Response(status_code=204)  # Return 204 No Content   
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+        return response
+
+    # Handle other requests
+    response = await call_next(request)
+    if origin and any(re.match(pattern, origin) for pattern in allowed_origin_patterns):
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+
+    return response
+
 
 ENV = os.getenv("ENV")
 WORKERS_COUNT = os.getenv("WORKERS_COUNT")

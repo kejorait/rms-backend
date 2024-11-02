@@ -1,15 +1,17 @@
+import importlib.util
 import os
 import sys
-from sqlalchemy import create_engine, inspect, Column, text
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import DeclarativeMeta
-import importlib.util
-from psycopg2 import connect, sql
-from psycopg2.errors import InvalidCatalogName, DuplicateDatabase
+
 from dotenv import load_dotenv
+from psycopg2 import connect, sql
+from psycopg2.errors import DuplicateDatabase
+from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.ext.declarative import DeclarativeMeta
+from sqlalchemy.orm import sessionmaker
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(override=True)
+
 
 # Retrieve PostgreSQL connection details from environment variables
 pg_user = os.getenv('PG_USER')
@@ -22,18 +24,20 @@ pg_host = os.getenv('PG_HOST')
 DB_URL = f"postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}"
 DB_URL_NO_DB = f"postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/postgres"
 
+print(f"Migrating to DB: {DB_URL}")
+
 def create_database():
+    """Creates the target database if it doesn't exist."""
     try:
-        # Connect to the default 'postgres' database to create the target database
         conn = connect(DB_URL_NO_DB)
         conn.autocommit = True
         cursor = conn.cursor()
         cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(pg_db)))
         cursor.close()
         conn.close()
-        print(f"Database {pg_db} created successfully.")
+        print(f"Database '{pg_db}' created successfully.")
     except DuplicateDatabase:
-        print(f"Database {pg_db} already exists.")
+        print(f"Database '{pg_db}' already exists.")
     except Exception as e:
         print(f"Error creating database: {e}")
         sys.exit(1)
@@ -44,9 +48,8 @@ try:
     engine.connect()
 except Exception as e:
     if "does not exist" in str(e):
-        print(f"Database {pg_db} does not exist, creating database...")
+        print(f"Database '{pg_db}' does not exist, creating database...")
         create_database()
-        # Retry creating the engine and connecting
         try:
             engine = create_engine(DB_URL)
             engine.connect()
@@ -61,7 +64,7 @@ except Exception as e:
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Import all models from the models folder excluding base.py
+# Import all models from the models folder, excluding base.py
 models_folder = "models"  # Replace with your actual models folder path
 models = {}
 
@@ -91,7 +94,7 @@ for model_name, model_class in models.items():
     
     if not inspector.has_table(table_name):
         model_class.__table__.create(engine)
-        print(f"Created table for model {model_name}: {table_name}")
+        print(f"Created table for model '{model_name}': {table_name}")
     else:
         # Get existing columns from the database
         existing_columns = {col['name'] for col in inspector.get_columns(table_name)}
@@ -99,12 +102,26 @@ for model_name, model_class in models.items():
         # Iterate over model columns and check if they exist in the table
         for column in model_class.__table__.columns:
             if column.name not in existing_columns:
-                # Add missing column
+                # Determine the SQL type
+                column_type = str(column.type).replace("DATETIME", "TIMESTAMP")
+                
+                # Get the default value from the column definition
+                default_value = column.default
+                if default_value is not None:
+                    # If default_value is a callable (e.g., func.now()), resolve it
+                    if callable(default_value.arg):
+                        default_value = "CURRENT_TIMESTAMP"
+                    else:
+                        default_value = f"'{default_value.arg}'" if isinstance(default_value.arg, str) else default_value.arg
+                
+                # Add column with default if specified
                 with engine.begin() as conn:
-                    alter_stmt = text(f"ALTER TABLE {table_name} ADD COLUMN {column.name} {column.type}")
-                    print(alter_stmt)
-                    conn.execute(alter_stmt)
-                    print(f"Added column {column.name} to table {table_name}")
+                    alter_stmt = f'ALTER TABLE "{table_name}" ADD COLUMN "{column.name}" {column_type}'
+                    if default_value is not None:
+                        alter_stmt += f" DEFAULT {default_value}"
+                    print(f"Executing: {alter_stmt}")
+                    conn.execute(text(alter_stmt))
+                    print(f"Added column '{column.name}' to table '{table_name}' with default {default_value}")
 
 
 # Commit changes and close session
