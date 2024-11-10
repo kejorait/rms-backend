@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
+from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import and_
 
@@ -63,7 +63,8 @@ class DiningTableService:
                         Bill.table_cd == Table.cd,
                         Bill.is_inactive == constants.NO,
                         Bill.is_delete == constants.NO,
-                        Bill.is_paid == constants.NO
+                        Bill.is_paid == constants.NO,
+                        not_(Bill.user_nm.ilike('%Split%'))
                     ))
             subquery = subquery.outerjoin(TableSession, and_(
                         Bill.cd == TableSession.bill_cd,

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+            />
+            <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap"
+            rel="stylesheet"
+            />
+            <title>Document</title>
+        </head>
+        <body>
+            <div
+            style="
+                padding-right: 3.5rem;
+                display: flex;
+                flex-direction: column;
+                width: 300px;
+                font-family: 'Poppins', sans-serif;
+            "
+            >
+            <div style="padding-bottom: 1rem">
+                <p
+                style="
+                    text-align: center;
+                    font-size: 1.4375rem; /* Updated from 1.125rem */
+                    font-weight: 500;
+                    text-decoration: underline;
+                "
+                >
+                Orders
+                </p>
+                <p style="font-size: 1.6875rem;">Table: {bill["table_nm"]}</p> <!-- Updated from 1.1875rem -->
+                <p style="font-size: 1.3125rem;">{bill["created_dt"]}</p> <!-- Updated from 0.8125rem -->
+            </div>
+
+            <table style="table-layout: fixed; font-size: 1.3125rem; width: 100%; margin: 0 auto"> <!-- Updated from 0.8125rem -->
+                <thead>
+                <tr>
+                    <th
+                    style="
+                        text-align: center;
+                        font-size: 1.3125rem; /* Updated from 0.8125rem */
+                        padding: 0.5rem;
+                        border-bottom: 1px solid black;
+                        width: 20%;
+                        font-weight: 500;
+                    "
+                    >
+                    QTY
+                    </th>
+                    <th
+                    style="
+                        text-align: left;
+                        font-size: 1.3125rem; /* Updated from 0.8125rem */
+                        padding-left: 0.5rem;
+                        padding-top: 0.5rem;
+                        padding-bottom: 0.5rem;
+                        border-bottom: 1px solid black;
+                        width: 80%;
+                        font-weight: 500;
+                    "
+                    >
+                    ITEM
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {"".join(f"""
+                            <tr>
+                            <td style="text-align: center; font-size: 1.6875rem; font-weight: 700; padding: 0.25rem;">{item['qty']}</td> <!-- Updated from 1.1875rem -->
+                            <td style="font-size: 1.6875rem; font-weight: 700; text-align: left; padding-left: 0.5rem;">{item['menu_nm']}</td> <!-- Updated from 1.1875rem -->
+                            </tr>""" for item in bill["menu_items"])}
+                </tbody>
+            </table>
+            <hr style="border-color: black; border-style: dashed; width: 100%" />
+            </div>
+        </body>
+        </html>
+        

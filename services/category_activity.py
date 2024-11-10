@@ -66,8 +66,7 @@ class CategoryService:
                     jsonStr["status"] = constants.STATUS_SUCCESS
                 if file and self.allowed_file(file.filename):
                     filename = str(file.filename)
-                    filename_data = filename[:-4]
-                    filename_ext = filename[-4:]
+                    filename_data, filename_ext = os.path.splitext(filename)
                     timenow = str(dt.datetime.now())
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
@@ -75,7 +74,7 @@ class CategoryService:
                         filename_data + "-" + datenow + "-" + timenow + filename_ext
                     )
                     filename = secure_filename(filename)
-                    self.log.info(filename)
+                    # self.log.info(filename)
                     file_path = os.path.join(self.CATEGORY_FOLDER, filename)
                     with open(file_path, "wb") as buffer:
                         # Copy the file contents into the buffer
@@ -131,8 +130,7 @@ class CategoryService:
                     jsonStr["status"] = constants.STATUS_SUCCESS
                 if file and self.allowed_file(file.filename):
                     filename = str(file.filename)
-                    filename_data = filename[:-4]
-                    filename_ext = filename[-4:]
+                    filename_data, filename_ext = os.path.splitext(filename)
                     timenow = str(dt.datetime.now())
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
@@ -140,7 +138,7 @@ class CategoryService:
                         filename_data + "-" + datenow + "-" + timenow + filename_ext
                     )
                     filename = secure_filename(filename)
-                    self.log.info(filename)
+                    # self.log.info(filename)
                     file_path = os.path.join(self.CATEGORY_FOLDER, filename)
                     with open(file_path, "wb") as buffer:
                         # Copy the file contents into the buffer
@@ -220,7 +218,7 @@ class CategoryService:
                 data_list["cd"] = mdl.Category.cd
                 data_list["nm"] = mdl.Category.nm
                 if mdl.Category.img:
-                    data_list["img"] = self.CATEGORY_URL + mdl.Category.img
+                    data_list["img"] = self.CATEGORY_URL + mdl.Category.img if mdl.Category.img else ""
                 else:
                     data_list["img"] = ""
                 data_list["created_dt"] = mdl.Category.created_dt
@@ -242,32 +240,32 @@ class CategoryService:
 
     def getCategoryByCd(self, request, db):
         jsonStr = {}
-        try:
+        # try:
             # Log initial processing
             # self.log.info("Processing request for category with cd: %s", request.cd)
 
             # Query the database for categories matching the conditions
-            query = db.query(Category).filter(
-                Category.is_delete == constants.NO,
-                Category.is_inactive == constants.NO,
-                Category.cd == request.cd,
-            )
-            rows = query.first()
+        query = db.query(Category).filter(
+            Category.is_delete == constants.NO,
+            Category.is_inactive == constants.NO,
+            Category.cd == request.cd,
+        )
+        rows = query.first()
 
-            listData = {}
-            listData.update(json.loads(json.dumps(rows, cls=ExtendEncoder)))
-            listData["img"] = self.CATEGORY_URL + listData["img"]
+        listData = {}
+        listData.update(json.loads(json.dumps(rows, cls=ExtendEncoder)))
+        listData["img"] = self.CATEGORY_URL + listData["img"] if listData["img"] else ""
 
-            # Construct response
-            res = {"data": listData, "status": "Success", "isError": constants.NO}
-            jsonStr = res
-            # self.log.info("Response: %s", jsonStr)
-            return jsonStr
+        # Construct response
+        res = {"data": listData, "status": "Success", "isError": constants.NO}
+        jsonStr = res
+        # self.log.info("Response: %s", jsonStr)
+        return jsonStr
 
-        except Exception as ex:
-            # Log the exception details
-            self.log.exception("An error occurred in getCategoryByCd")
+        # except Exception as ex:
+        #     # Log the exception details
+        #     self.log.exception("An error occurred in getCategoryByCd")
 
-            # Handle the exception response
-            jsonStr = {"isError": constants.YES, "status": "Failed"}
+        #     # Handle the exception response
+        #     jsonStr = {"isError": constants.YES, "status": "Failed"}
         return jsonStr

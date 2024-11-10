@@ -1,8 +1,10 @@
-from datetime import date
+
 from pydantic import BaseModel, Field
-from typing import Dict, List
 
 
 class Login(BaseModel):
     username: str | None = Field(default=None, examples=["kasir"])
+    password: str | None = Field(default=None, examples=["1111"])
+    
+class CheckAdmin(BaseModel):
     password: str | None = Field(default=None, examples=["1111"])

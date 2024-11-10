@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from fastapi.requests import Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import func
+from sqlalchemy import func, not_
 from sqlalchemy.orm import aliased
 from sqlalchemy.sql.expression import and_
 
@@ -227,7 +227,8 @@ class TableService:
         jsonStr = {}
         
         try:
-            if request.nm.isdigit():
+            if any(char.isdigit() for char in request.nm):
+            # Do something if request.nm contains a number
                 query = db.query(Table)
                 query = query.filter(Table.nm == request.nm)
                 query = query.filter(Table.is_delete == constants.NO)
@@ -236,10 +237,11 @@ class TableService:
                 row = query.first()
 
                 if row:
-                    jsonStr["data"] = {"exists": True}
-                    jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
-                    return jsonStr
+                    if row.cd != request.cd:
+                        jsonStr["data"] = {"exists": True}
+                        jsonStr["isError"] = constants.NO
+                        jsonStr["status"] = "Success"
+                        return jsonStr
                 else:
                     table = Table()
                     table.cd = uuid4().hex
@@ -254,7 +256,7 @@ class TableService:
                     db.add(table)
                     db.commit()
             else:
-                jsonStr["data"] = "Table name must be a number"
+                jsonStr["data"] = "Table name must contain number"
                 jsonStr["isError"] = constants.YES
                 jsonStr["status"] = "Failed"
                 return jsonStr
@@ -278,7 +280,8 @@ class TableService:
         jsonStr = {}
         try:
             # self.log.info("Response "+str(jsonStr))
-            if request.nm.isdigit():
+            if any(char.isdigit() for char in request.nm):
+            # Do something if request.nm contains a number
                 query = db.query(Table)
                 query = query.filter(Table.nm == request.nm)
                 query = query.filter(Table.is_delete == constants.NO)
@@ -286,11 +289,12 @@ class TableService:
                 query = query.filter(Table.is_billiard == request.is_billiard)
                 row = query.first()
 
-                if row.cd != request.cd:
-                    jsonStr["data"] = {"exists": True}
-                    jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
-                    return jsonStr
+                if row:
+                    if row.cd != request.cd:
+                        jsonStr["data"] = {"exists": True}
+                        jsonStr["isError"] = constants.NO
+                        jsonStr["status"] = "Success"
+                        return jsonStr
 
                 cd = request.cd
                 table = db.query(Table).get(cd)
@@ -308,12 +312,12 @@ class TableService:
                 jsonStr["isError"] = constants.NO
                 jsonStr["status"] = constants.STATUS_SUCCESS
             else:
-                jsonStr["data"] = "Table name must be a number"
+                jsonStr["data"] = "Table name must contain number"
                 jsonStr["isError"] = constants.YES
                 jsonStr["status"] = "Failed"
                 return jsonStr
         except Exception as ex:
-            self.log.exception(" MenuService")
+            # self.log.exception(" MenuService")
             jsonStr["data"] = str(ex)
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
@@ -432,7 +436,8 @@ class TableService:
                         Bill.table_cd == Table.cd,
                         Bill.is_inactive == constants.NO,
                         Bill.is_delete == constants.NO,
-                        Bill.is_paid == constants.NO
+                        Bill.is_paid == constants.NO,
+                        not_(Bill.user_nm.ilike('%Split%'))
                     ))
             subquery = subquery.outerjoin(TableSession, and_(
                         Bill.cd == TableSession.bill_cd,

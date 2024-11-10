@@ -9,12 +9,14 @@ class Get(BaseModel):
 
 
 class GetByCd(BaseModel):
-    cd: Optional[str] = Field(None, example="123456")
+    bill_cd: Optional[str] = Field(None, example="123456")
 
 
 class Print(BaseModel):
     bill_cd: Optional[str] = Field(None, example="ABC123")
     print_to_printer: Optional[bool] = Field(False, example=True)
+    print_amount: Optional[int] = Field(None, example=1)
+    html: Optional[str] = Field(None, example="<html></html>")
 
 class FromToDt(BaseModel):
     from_dt: Optional[date] = Field(None, example="2024-01-01")
@@ -43,6 +45,7 @@ class CreateBulk(BaseModel):
     bill_cd: Optional[str] = Field(None, example="9f47f518-33a3-4be9-9b9a-e829bf0721f5")
     print_to_printer: Optional[bool] = Field(False, example=True)
     orders: Optional[List[CreateBulkDetail]] = None
+    print_amount: Optional[int] = Field(None, example=1)
 
 
 class DeleteBulkDetail(BaseModel):
@@ -66,3 +69,8 @@ class Delete(BaseModel):
 class Update(BaseModel):
     cd: Optional[str] = Field(None, example="eac51a0464334c25b2b3eca27ae5792a")
     process_status: Optional[str] = Field(None, example="12")
+
+class Discount(BaseModel):
+    cd: Optional[str] = Field(None, example="eac51a0464334c25b2b3eca27ae5792a")
+    bill_discount: Optional[int] = Field(None, example=12)
+    billiard_discount: Optional[int] = Field(None, example=12)

@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi.requests import Request
 
 from helper import constants
+from models.app_setting import AppSetting
 from models.bill import Bill
 from models.table import Table
 from models.table_session import TableSession
@@ -60,7 +61,8 @@ class TableSessionService:
                     table_session.is_open = constants.YES
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
-                    table_session.price = request.price
+                    table_session.price = db.query(AppSetting.value).filter(AppSetting.cd == 'price_per_interval').filter(AppSetting.is_delete == constants.NO).filter(AppSetting.is_inactive == constants.NO).first()[0]
+                    table_session.interval = db.query(AppSetting.value).filter(AppSetting.cd == 'time_interval').filter(AppSetting.is_delete == constants.NO).filter(AppSetting.is_inactive == constants.NO).first()[0]
 
                     db.add(table_session)
 
@@ -71,6 +73,7 @@ class TableSessionService:
                     table.serial_status = 'ON'
                     table.serial_sent = constants.NO
                     table.serial_off_dt = None
+                    table.sent_closed = constants.NO
                     # query = db.query(AppSetting.value)
                     # query = query.filter(AppSetting.cd == 'com_port')
                     # com_port = query.first()
@@ -150,7 +153,8 @@ class TableSessionService:
                     table_session.is_open = constants.NO
                     table_session.is_closed = constants.NO
                     table_session.is_paid = constants.NO
-                    table_session.price = request.price
+                    table_session.price = db.query(AppSetting.value).filter(AppSetting.cd == 'price_per_interval').filter(AppSetting.is_delete == constants.NO).filter(AppSetting.is_inactive == constants.NO).first()[0]
+                    table_session.interval = db.query(AppSetting.value).filter(AppSetting.cd == 'time_interval').filter(AppSetting.is_delete == constants.NO).filter(AppSetting.is_inactive == constants.NO).first()[0]
 
                     db.add(table_session)
 
@@ -160,6 +164,7 @@ class TableSessionService:
 
                     table.serial_status = 'ON'
                     table.serial_sent = constants.NO
+                    table.sent_closed = constants.NO
                     table.serial_off_dt = dt.datetime.now()+dt.timedelta(seconds=int(request.amount))
 
                     db.commit()
@@ -202,6 +207,8 @@ class TableSessionService:
             table = db.query(Table).get(request.table_cd)
             table.serial_status = 'OFF'
             table.serial_off_dt = dt.datetime.now()
+            table.serial_sent = constants.YES
+            table.sent_closed = constants.NO
 
             db.commit()
 

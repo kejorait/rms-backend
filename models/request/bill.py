@@ -40,5 +40,6 @@ class Paid(BaseModel):
     amount: Optional[int] = Field(None, example="1691219")
 
 class FromToDt(BaseModel):
-    from_dt: Optional[datetime] = Field(None, example="1691219")
-    to_dt: Optional[datetime] = Field(None, example="2096536019")
+    # Make sure the datetime is timezone-aware, set to UTC by default
+    from_dt: Optional[int] = Field(None, example="1691219")
+    to_dt: Optional[int] = Field(None, example="2096536019")

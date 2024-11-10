@@ -1,6 +1,7 @@
 import importlib.util
 import os
 import sys
+from urllib.parse import quote_plus  # Import URL encoding function
 
 from dotenv import load_dotenv
 from psycopg2 import connect, sql
@@ -12,17 +13,19 @@ from sqlalchemy.orm import sessionmaker
 # Load environment variables from .env file
 load_dotenv(override=True)
 
-
 # Retrieve PostgreSQL connection details from environment variables
 pg_user = os.getenv('PG_USER')
-pg_pwd = os.getenv('PG_PWD')
+pg_pwd = os.getenv('PG_PWD')  # Password might contain special characters like '@'
 pg_port = os.getenv('PG_PORT')
 pg_db = os.getenv('PG_DB')
 pg_host = os.getenv('PG_HOST')
 
+# URL-encode the password to handle special characters
+pg_pwd_encoded = quote_plus(pg_pwd)  # This encodes the password properly
+
 # Construct the database URL
-DB_URL = f"postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/{pg_db}"
-DB_URL_NO_DB = f"postgresql://{pg_user}:{pg_pwd}@{pg_host}:{pg_port}/postgres"
+DB_URL = f"postgresql://{pg_user}:{pg_pwd_encoded}@{pg_host}:{pg_port}/{pg_db}"
+DB_URL_NO_DB = f"postgresql://{pg_user}:{pg_pwd_encoded}@{pg_host}:{pg_port}/postgres"
 
 print(f"Migrating to DB: {DB_URL}")
 

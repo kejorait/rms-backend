@@ -1,22 +1,24 @@
-import json
-from datetime import datetime
 import datetime as dt
-
-from fastapi.responses import JSONResponse
-from models.user_credential import UserCredential
-from models.user import User
-from models.user_session import UserSession
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
-from helper.helper import create_refresh_token, response_cookies, tokenstr, create_access_token
-from utils.tinylog import getLogger, setupLog
+import json
+import os
+from datetime import datetime
 from uuid import uuid4
+
 import bcrypt
 import jwt
-from helper.helper import datetimeToLongJS
-import os
-from fastapi.requests import Request
 from fastapi import HTTPException
+from fastapi.requests import Request
+from fastapi.responses import JSONResponse
+
+from helper import constants
+from helper.helper import (create_access_token, create_refresh_token,
+                           datetimeToLongJS, response_cookies)
+from helper.jsonHelper import ExtendEncoder
+from models.user import User
+from models.user_credential import UserCredential
+from models.user_session import UserSession
+from utils.tinylog import getLogger, setupLog
+
 
 class UserCredentialService:
     name = "user_credential"
@@ -167,80 +169,72 @@ class UserCredentialService:
         response = JSONResponse(content=jsonStr, headers=headers)
         return response
     
-    def checkCredentialAdmin(self, request, db, SECRET_KEY):
+    def loginAdmin(self, request, db, SECRET_KEY):
         jsonStr = {}
         try:
-            ## self.log.info("Response "+str(jsonStr))
             username = request.username
             password = request.password.encode()
 
-            query = db.query(User,
-                                     UserCredential)
-            query = query.join(User,
-                               User.cd == UserCredential.user_cd)
+            query = db.query(User, UserCredential)
+            query = query.join(User, User.cd == UserCredential.user_cd)
+            query = query.filter(User.role_cd.in_(['owner', 'supervisor']))
             query = query.filter(User.username == username)
-            query = query.filter(User.role_cd.in_(["owner","supervisor"]))
+            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
             
             data = query.first()
 
             db.close()
-            pwhash = bcrypt.hashpw(password, data[1].password.encode('utf8')).decode('utf8')
-            # #self.log.info(data.password)
-            # #self.log.info(pwhash)
-            # #self.log.info(data[0])
-            if data[1].password == pwhash:
-                query = db.query(
-                UserSession
-            )
-                query = query.filter(UserSession.user_cd == data[0].cd)
-                query = query.filter(UserSession.is_delete == constants.NO)
-                data_session = query.first()
-                db.close()
-                # self.log.info(data_session)
-                if data_session:
-                    update_session = db.query(UserSession).get(data_session.cd)
-                    update_session.updated_dt = dt.datetime.now()
-                    update_session.is_delete = constants.YES
+            if data is not None:
+                pwhash = bcrypt.hashpw(password, data[1].password.encode('utf8')).decode('utf8')
+                if data[1].password == pwhash:
+                    query = db.query(UserSession)
+                    query = query.filter(UserSession.user_cd == data[0].cd)
+                    query = query.filter(UserSession.is_delete == constants.NO)
+                    data_session = query.first()
+                    db.close()
+                    if data_session:
+                        update_session = db.query(UserSession).get(data_session.cd)
+                        update_session.updated_dt = dt.datetime.now()
+                        update_session.is_delete = constants.YES
+                        db.commit()
+                    
+                    user = json.loads(json.dumps(data[0], cls=ExtendEncoder))
+
+                    access_token_expires = dt.timedelta(minutes=constants.ACCESS_TOKEN_EXPIRE_MINUTES)
+                    access_token = create_access_token(
+                        data=user, secret_key=SECRET_KEY, expires_delta=access_token_expires
+                    )
+
+                    refresh_token_expires = dt.timedelta(days=constants.REFRESH_TOKEN_EXPIRE_DAYS)
+                    refresh_token = create_refresh_token(
+                        data=user, secret_key=SECRET_KEY, expires_delta=refresh_token_expires
+                    )
+
+                    jsonStr["data"] = constants.STATUS_SUCCESS
+                    jsonStr["isError"] = constants.NO
+                    jsonStr["status"] = "Success"
+                    jsonStr["access_token"] = access_token
+                    jsonStr["refresh_token"] = refresh_token
+
+                    usersession = UserSession()
+                    usersession.cd = uuid4().hex
+                    usersession.user_cd = data[0].cd
+                    usersession.created_dt = dt.datetime.now()
+                    usersession.is_delete = constants.NO
+
+                    db.add(usersession)
                     db.commit()
-
-                user = json.dumps(data[0], cls=ExtendEncoder)
-                # self.log.info(SECRET_KEY)
-                # self.log.info(type(user))
-                token = jwt.encode(json.loads(user), str(SECRET_KEY))
-                token_str = tokenstr(token, self.env)
-                headers = [ ('Set-Cookie', token_str) ]
-                # #self.log.info(token)
-                # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256)
-                # #self.log.info(payload)
-                # token.decode('UTF-8')
-                jsonStr["data"] = constants.STATUS_SUCCESS
-                jsonStr["isError"] = constants.NO
-                jsonStr["status"] = "Success"
-
-                usersession = UserSession()
-                usersession.cd = uuid4().hex
-                usersession.user_cd = data[0].cd
-                usersession.created_dt = dt.datetime.now()
-                usersession.is_delete = constants.NO
-
-                db.add(usersession)
-                db.commit()
+                else:
+                    raise Exception("Wrong Password")
             else:
-                self.log.exception(" UserService")
-                jsonStr["isError"] = constants.YES
-                jsonStr["status"] = "Failed"
-                response = jsonStr, 500
-                # response.headers.add("Access-Control-Allow-Origin", "http://localhost:3000")
-                return response
+                raise Exception("User Not Found")
 
         except Exception as ex:
-            self.log.exception(" UserService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
-        # access_token = create_access_token(identity=user, fresh=True, expires_delta=datetime.timedelta(days=1, seconds=5))
-        # set_access_cookies(jsonStr, token)
-        response = jsonStr, 200, headers
+            self.log.error(ex)
+            response = JSONResponse(status_code=500, content={"data": str(ex), "isError": constants.YES, "status": constants.STATUS_FAILED})
+            return response
+        
+        response = JSONResponse(content=jsonStr)
         return response
     
     def checkCredentialSupervisor(self, request, db, SECRET_KEY):
@@ -249,61 +243,30 @@ class UserCredentialService:
             ## self.log.info("Response "+str(jsonStr))
             password = request.password.encode()
 
-            query = db.query(User,
-                                     UserCredential)
-            query = query.join(User,
-                               User.cd == UserCredential.user_cd)
-            query = query.filter(User.role_cd == "supervisor")
-            
-            data = query.first()
+            query = db.query(User, UserCredential)
+            query = query.join(User, User.cd == UserCredential.user_cd)
+            query = query.filter(User.role_cd.in_(['supervisor', 'owner']))  # Check for both roles
 
-            db.close()
-            pwhash = bcrypt.hashpw(password, data[1].password.encode('utf8')).decode('utf8')
-            # #self.log.info(data.password)
-            # #self.log.info(pwhash)
-            # #self.log.info(data[0])
-            if data[1].password == pwhash:
-                query = db.query(
-                UserSession
-            )
-                query = query.filter(UserSession.user_cd == data[0].cd)
-                query = query.filter(UserSession.is_delete == constants.NO)
-                data_session = query.first()
-                db.close()
-                # self.log.info(data_session)
-                if data_session:
-                    update_session = db.query(UserSession).get(data_session.cd)
-                    update_session.updated_dt = dt.datetime.now()
-                    update_session.is_delete = constants.YES
-                    db.commit()
+            # Fetch all matching records
+            users_data = query.all()
 
-                user = json.dumps(data[0], cls=ExtendEncoder)
-                # self.log.info(SECRET_KEY)
-                # self.log.info(type(user))
-                token = jwt.encode(json.loads(user), str(SECRET_KEY))
-                token_str = tokenstr(token, self.env)
-                headers = [ ('Set-Cookie', token_str) ]
-                # #self.log.info(token)
-                # payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256)
-                # #self.log.info(payload)
-                # token.decode('UTF-8')
-                jsonStr["data"] = constants.STATUS_SUCCESS
-                jsonStr["isError"] = constants.NO
-                jsonStr["status"] = "Success"
+            jsonStr["isError"] = constants.YES
+            jsonStr["status"] = "Failed"
+            status = 500
 
-                usersession = UserSession()
-                usersession.cd = uuid4().hex
-                usersession.user_cd = data[0].cd
-                usersession.created_dt = dt.datetime.now()
-                usersession.is_delete = constants.NO
+            for data in users_data:
+                pwhash = bcrypt.hashpw(password, data[1].password.encode('utf8')).decode('utf8')
+                # #self.log.info(data.password)
+                # #self.log.info(pwhash)
+                # #self.log.info(data[0])
+                if data[1].password == pwhash:
 
-                db.add(usersession)
-                db.commit()
-            else:
-                self.log.exception(" UserService")
-                jsonStr["isError"] = constants.YES
-                jsonStr["status"] = "Failed"
-                return jsonStr, 500
+                    jsonStr["data"] = constants.STATUS_SUCCESS
+                    jsonStr["isError"] = constants.NO
+                    jsonStr["status"] = "Success"
+                    status = 200
+                    
+            return jsonStr, status
 
         except Exception as ex:
             self.log.exception(" UserService")
@@ -311,7 +274,3 @@ class UserCredentialService:
             jsonStr["status"] = "Failed"
             response = jsonStr, 500
             return response
-        # access_token = create_access_token(identity=user, fresh=True, expires_delta=datetime.timedelta(days=1, seconds=5))
-        # set_access_cookies(jsonStr, token)
-        response = jsonStr, 200, headers
-        return response

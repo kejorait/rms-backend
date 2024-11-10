@@ -1,12 +1,14 @@
-import os
 import datetime
-from fastapi.responses import JSONResponse
-from models.stock import Stock
-from helper.jsonHelper import ExtendEncoder
-from helper import constants
-from utils.tinylog import getLogger, setupLog
+import os
 from uuid import uuid4
+
 from dotenv import load_dotenv
+from fastapi.responses import JSONResponse
+
+from helper import constants
+from helper.jsonHelper import ExtendEncoder
+from models.stock import Stock
+from utils.tinylog import getLogger, setupLog
 
 load_dotenv()
 
@@ -216,7 +218,7 @@ class StockService:
             query = query.filter(Stock.cd == cd)
             data = query.first()
             # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
-            self.log.info(data)
+            # self.log.info(data)
             db.close()
             res = {}
             data_list = {}

@@ -1,34 +1,43 @@
-from datetime import datetime
-import os
-import threading
-import uuid
-import win32api
-import win32print
 import base64
 import logging
+import os
+import subprocess
+import threading
+import uuid
 
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.remote_connection import LOGGER
+from webdriver_manager.chrome import ChromeDriverManager
+
 from helper import constants
 from models.app_setting import AppSetting
 
+
 # Printing functions for Windows
-def print_pdf_windows(pdf_path, printer_name):
+def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"):
     if not os.path.isfile(pdf_path):
         raise FileNotFoundError(f"The PDF file does not exist: {pdf_path}")
-    # Set the printer
+    if not os.path.isfile(sumatra_path):
+        raise FileNotFoundError(f"The SumatraPDF executable does not exist: {sumatra_path}")
+
     try:
-        win32print.SetDefaultPrinter(printer_name)
-        # Print the PDF
-        if printer_name == "Microsoft Print to PDF":
-            win32api.ShellExecute(0, "printto", pdf_path, None, printer_name, 0)
-        else:
-            win32api.ShellExecute(0, "print", pdf_path, None, ".", 0)
-    except Exception as e:
+        print(f"Printing to {printer_name} using SumatraPDF")
+        # Command to print the PDF
+        command = [
+            sumatra_path,
+            "-print-to", printer_name,
+            "-print-settings", "portrait,fit",
+            pdf_path
+        ]
+        # Run the command
+        subprocess.run(command, check=True)
+        print("Print job sent successfully.")
+    except subprocess.CalledProcessError as e:
         print(f"Error occurred while printing: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
 def print_html(html_content, download_dir, print_settings):
     LOGGER.setLevel(logging.WARNING)
@@ -84,12 +93,13 @@ def print_html(html_content, download_dir, print_settings):
         "Page.printToPDF",
         {
             "printBackground": True,
-            "paperWidth": int(print_settings["paper_width"]),  # A4 width in inches
-            "paperHeight": int(height_in_inches * 1.5),  # A4 height in inches
-            "marginTop": 0.4,
-            "marginBottom": 0.4,
-            "marginLeft": 0.4,
-            "marginRight": 0.4,
+            "paperWidth": float(print_settings["paper_width"]),  # A4 width in inches
+            "paperHeight": float(height_in_inches * 1.5),  # A4 height in inches
+            "marginTop": 0,
+            "marginBottom": 0,
+            "marginLeft": 0,
+            "marginRight": 0,
+            "landscape": False,
         },
     )
 
@@ -106,7 +116,7 @@ def print_html(html_content, download_dir, print_settings):
     # Check if the PDF file was created successfully
     if os.path.exists(pdf_path):
         print_pdf_windows(pdf_path, print_settings["printer"])
-        print_pdf_windows(pdf_path, print_settings["printer"])
+        # print_pdf_windows(pdf_path, print_settings["printer"])
         
     # delete the pdf file
     os.remove(pdf_path)
@@ -115,89 +125,88 @@ def print_html(html_content, download_dir, print_settings):
 def generateKitchenBillHtml(bill):
     # Generate the HTML content for the bill
     html_content = f'''
-        <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8" />
-                <meta
-                name="viewport"
-                content="width=device-width, initial-scale=1.0"
-                />
-                <link
-                href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap"
-                rel="stylesheet"
-                />
-                <title>Document</title>
-            </head>
-            <body>
-                <div
+       <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8" />
+            <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+            />
+            <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap"
+            rel="stylesheet"
+            />
+            <title>Document</title>
+        </head>
+        <body>
+            <div
+            style="
+                padding-right: 3.5rem;
+                display: flex;
+                flex-direction: column;
+                width: 300px;
+                font-family: 'Poppins', sans-serif;
+            "
+            >
+            <div style="padding-bottom: 1rem">
+                <p
                 style="
-                    padding-right: 3.5rem;
-                    display: flex;
-                    flex-direction: column;
-
-                    width: 300px;
-                    font-family: 'Poppins', sans-serif;
+                    text-align: center;
+                    font-size: 1.4375rem; /* Updated from 1.125rem */
+                    font-weight: 500;
+                    text-decoration: underline;
                 "
                 >
-                <div style="padding-bottom: 1rem">
-                    <p
+                Orders
+                </p>
+                <p style="font-size: 1.6875rem;">Table: {bill["table_nm"]}</p> <!-- Updated from 1.1875rem -->
+                <p style="font-size: 1.3125rem;">{bill["created_dt"]}</p> <!-- Updated from 0.8125rem -->
+            </div>
+
+            <table style="table-layout: fixed; font-size: 1.3125rem; width: 100%; margin: 0 auto"> <!-- Updated from 0.8125rem -->
+                <thead>
+                <tr>
+                    <th
                     style="
                         text-align: center;
-                        font-size: 0.875rem;
+                        font-size: 1.3125rem; /* Updated from 0.8125rem */
+                        padding: 0.5rem;
+                        border-bottom: 1px solid black;
+                        width: 20%;
                         font-weight: 500;
-                        text-decoration: underline;
                     "
                     >
-                    Orders
-                    </p>
-                    <p style="font-size: 1rem">Table: {bill["table_nm"]}</p>
-                    <p style="font-size: 0.75rem">{bill["created_dt"]}</p>
-                </div>
-
-                <table style="table-layout: fixed; font-size: 0.75rem; width: 100%; margin: 0 auto">
-                    <thead>
-                    <tr>
-                        <th
-                        style="
-                            text-align: center;
-                            font-size: 0.75rem;
-                            padding: 0.5rem;
-                            border-bottom: 1px solid black;
-                            width: 20%;
-                            font-weight: 500;
-                        "
-                        >
-                        QTY
-                        </th>
-                        <th
-                        style="
-                            text-align: left;
-                            font-size: 0.75rem;
-                            padding-left: 0.5rem;
-                            padding-top: 0.5rem;
-                            padding-bottom: 0.5rem;
-                            border-bottom: 1px solid black;
-                            width: 80%;
-                            font-weight: 500;
-                        "
-                        >
-                        ITEM
-                        </th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {"".join(f"""
-                                <tr>
-                                <td style="text-align: center; font-size: 1rem; font-weight: 700; padding: 0.25rem;">{item['qty']}</td>
-                                <td style="font-size: 1rem; font-weight: 700; text-align: left; padding-left: 0.5rem;">{item['menu_nm']}</td>
-                                </tr>""" for item in bill["menu_items"])}
-                    </tbody>
-                </table>
-                <hr style="border-color: black; border-style: dashed; width: 100%" />
-                </div>
-            </body>
-            </html>
+                    QTY
+                    </th>
+                    <th
+                    style="
+                        text-align: left;
+                        font-size: 1.3125rem; /* Updated from 0.8125rem */
+                        padding-left: 0.5rem;
+                        padding-top: 0.5rem;
+                        padding-bottom: 0.5rem;
+                        border-bottom: 1px solid black;
+                        width: 80%;
+                        font-weight: 500;
+                    "
+                    >
+                    ITEM
+                    </th>
+                </tr>
+                </thead>
+                <tbody>
+                {"".join(f"""
+                            <tr>
+                            <td style="text-align: center; font-size: 1.6875rem; font-weight: 700; padding: 0.25rem;">{item['qty']}</td> <!-- Updated from 1.1875rem -->
+                            <td style="font-size: 1.6875rem; font-weight: 700; text-align: left; padding-left: 0.5rem;">{item['menu_nm']}</td> <!-- Updated from 1.1875rem -->
+                            </tr>""" for item in bill["menu_items"])}
+                </tbody>
+            </table>
+            <hr style="border-color: black; border-style: dashed; width: 100%" />
+            </div>
+        </body>
+        </html>
         '''
 
     return html_content
@@ -220,13 +229,13 @@ def generateFinalBill(bill, print_settings):
                 <div style="padding-bottom: 1rem; display: flex; justify-content: center">
                     <img style="width: 80px" src="data:image/jpeg;base64, {print_settings["logo_base64"]}" alt="Logo"/>
                 </div>
-                <p style="font-size: 0.75rem">Address: Jl. Satu Maret No.5, RT.5/RW.2, Jakarta Barat</p>
+                <p style="font-size: 0.75rem">{print_settings["address"]}</p>
                 <div style="display: flex; justify-content: center; padding-top: 1rem; padding-bottom: 1rem">
                     <hr style="border-color: black; border-style: dashed; width: 100%" />
                 </div>
 
                 <div style="padding-bottom: 1rem">
-                    <p style="font-size: 0.875rem; font-weight: 500; text-decoration: underline">Receipt (Split Bill)</p>
+                    <p style="font-size: 0.875rem; font-weight: 500; text-decoration: underline">Receipt</p>
                     <p style="font-size: 0.875rem">{bill["table_nm"]}</p>
                 </div>
 
@@ -256,22 +265,22 @@ def generateFinalBill(bill, print_settings):
                     <tr>
                         <td style="width: 16.666%"></td>
                         <td style="font-size: 0.75rem; text-align: left; padding: 0.25rem">Subtotal</td>
-                        <td style="font-size: 0.75rem; text-align: right">Rp {format(int(bill['subtotal']), ',')}</td>
+                        <td style="font-size: 0.75rem; text-align: right">Rp {format(int(bill['subtotal'] if 'subtotal' in bill else 0), ',')}</td>
                     </tr>
                     <tr>
                         <td style="width: 16.666%"></td>
                         <td style="font-size: 0.75rem; text-align: left; padding: 0.25rem">Service</td>
-                        <td style="font-size: 0.75rem; text-align: right">Rp {format(int(bill['service']), ',')}</td>
+                        <td style="font-size: 0.75rem; text-align: right">Rp {format(int(bill['service'] if 'service' in bill else 0), ',')}</td>
                     </tr>
                     <tr>
                         <td style="width: 16.666%"></td>
                         <td style="font-size: 0.75rem; text-align: left; padding: 0.25rem">PB1</td>
-                        <td style="font-size: 0.75rem; text-align: right">Rp {format(int(bill['pb1']), ',')}</td>
+                        <td style="font-size: 0.75rem; text-align: right">Rp {format(int(bill['pb1'] if 'pb1' in bill else 0), ',')}</td>
                     </tr>
                     <tr>
                         <td style="width: 16.666%"></td>
                         <td style="font-size: 0.75rem; text-align: left; padding: 0.25rem; font-weight: bold; white-space: nowrap;">Dining Total</td>
-                        <td style="font-size: 0.75rem; text-align: right; font-weight: bold">Rp {format(int(bill['dining_total']), ',')}</td>
+                        <td style="font-size: 0.75rem; text-align: right; font-weight: bold">Rp {format(int(bill['dining_total'] if 'dining_total' in bill else 0), ',')}</td>
                     </tr>
                 </table>
 
@@ -411,7 +420,7 @@ def printBill(db, billType, printData):
     query = query.filter(AppSetting.is_delete == constants.NO)
     query = query.filter(AppSetting.is_inactive == constants.NO)
     query = query.filter(
-        AppSetting.cd.in_(["printer", "paper_width", "paper_height", "logo_base64"])
+        AppSetting.cd.in_(["printer", "paper_width", "paper_height", "logo_base64", "address", "zoom"])
     )
     print_query = query.all()
     print_settings = {setting.cd: setting.value for setting in print_query}
@@ -425,14 +434,19 @@ def printBill(db, billType, printData):
     
     # Generate the HTML content for the bill
     # switch case for bill type
+    
     if billType == "new_order":
         html_content = generateKitchenBillHtml(printData)
     elif billType == "payment":
-        html_content = generateFinalBill(printData, print_settings)
+        # html_content = generateFinalBill(printData, print_settings)
+        if printData["html"]:
+            html_content = printData["html"]
     # Run the print function
 
     def background_print():
-        print_html(html_content, download_directory, print_settings)
+        for i in range(printData["print_amount"]):
+            # print(html_content)
+            print_html(html_content, download_directory, print_settings)
 
     # Run the printing in a background thread
     print_thread = threading.Thread(target=background_print)

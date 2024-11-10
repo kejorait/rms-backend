@@ -53,6 +53,7 @@ class UserService:
             query = query.filter(User.is_delete == constants.NO)
             query = query.filter(User.is_inactive == constants.NO)
             query = query.filter(User.is_resign == constants.NO)
+            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
             data = query.all()
 
             db.close()
@@ -65,10 +66,7 @@ class UserService:
                 data_list["cd"] = mdl.User.cd
                 data_list["name"] = mdl.User.name
                 data_list["username"] = mdl.User.username
-                if mdl.User.created_dt:
-                    data_list["created_dt"] = datetime.timestamp(mdl.User.created_dt)
-                else:
-                    data_list["created_dt"] = ""
+                data_list["created_dt"] = datetime.timestamp(mdl.User.created_dt) if mdl.User.created_dt else None
                 data_list["created_by"] = mdl.User.created_by
                 data_list["is_inactive"] = mdl.User.is_inactive
                 data_list["is_delete"] = mdl.User.is_delete
@@ -84,7 +82,7 @@ class UserService:
             jsonStr = res
             # self.log.info("Response " + str(jsonStr))
         except Exception as ex:
-            self.log.exception(" UserService")
+            # self.log.exception(" UserService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
         return jsonStr
@@ -100,8 +98,8 @@ class UserService:
             if search:
                 query = query.filter(User.name.ilike("%{}%".format(search)))
             query = query.join(Role, Role.cd == User.role_cd)
-            query = query.filter(User.role_cd != "supervisor")
-            query = query.filter(User.role_cd != "owner")
+            # query = query.filter(User.role_cd != "supervisor")
+            # query = query.filter(User.role_cd != "owner")
             query = query.filter(User.is_delete == constants.NO)
             query = query.filter(User.is_inactive == constants.NO)
             query = query.filter(User.is_resign == constants.NO)
@@ -146,7 +144,7 @@ class UserService:
             jsonStr = res
             # self.log.info("Response " + str(jsonStr))
         except Exception as ex:
-            self.log.exception(" UserService")
+            # self.log.exception(" UserService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
         return jsonStr
@@ -173,7 +171,7 @@ class UserService:
             data_list["name"] = mdl.User.name
             data_list["role_cd"] = mdl.User.role_cd
             data_list["role_nm"] = mdl.Role.nm
-            data_list["created_dt"] = datetime.timestamp(mdl.User.created_dt)
+            data_list["created_dt"] = datetime.timestamp(mdl.User.created_dt) if mdl.User.created_dt else None
             data_list["created_by"] = mdl.User.created_by
             data_list["is_inactive"] = mdl.User.is_inactive
             data_list["is_delete"] = mdl.User.is_delete
@@ -188,7 +186,7 @@ class UserService:
             jsonStr = res
             # self.log.info("Response "+str(jsonStr))
         except Exception as ex:
-            self.log.exception(" UserService")
+            # self.log.exception(" UserService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
         return jsonStr
@@ -205,7 +203,7 @@ class UserService:
             query = query.filter(User.is_inactive == constants.NO)
             row = query.first()
             if row:
-                self.log.exception(" UserService")
+                # self.log.exception(" UserService")
                 jsonStr["data"] = "username is used"
                 jsonStr["isError"] = constants.YES
                 jsonStr["status"] = "Failed"
@@ -229,10 +227,8 @@ class UserService:
                 else:
                     file = request.file
                     if file and self.allowed_file(file.filename):
-                        # self.log.info(file.filename)
                         filename = str(file.filename)
-                        filename_data = filename[:-4]
-                        filename_ext = filename[-4:]
+                        filename_data, filename_ext = os.path.splitext(filename)
                         timenow = str(dt.datetime.now())
                         datenow = timenow[:-16]
                         timenow = timenow[11:]
@@ -271,7 +267,7 @@ class UserService:
                 jsonStr["status"] = "Success"
 
         except Exception as ex:
-            self.log.exception(" UserService")
+            # self.log.exception(" UserService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
         # self.log.info("Response "+str(jsonStr))
@@ -297,8 +293,7 @@ class UserService:
                 file = request.file
                 if file and self.allowed_file(file.filename):
                     filename = str(file.filename)
-                    filename_data = filename[:-4]
-                    filename_ext = filename[-4:]
+                    filename_data, filename_ext = os.path.splitext(filename)
                     timenow = str(dt.datetime.now())
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
@@ -324,13 +319,13 @@ class UserService:
             usercredcd = data.cd
             userCredential = db.query(UserCredential).get(usercredcd)
             password = request.password.encode("utf8")
-            self.log.info(password)
+            # self.log.info(password)
             userCredential.password = bcrypt.hashpw(password, bcrypt.gensalt()).decode(
                 "utf8"
             )
             # self.log.info(userCredential.password)
             userCredential.updated_dt = dt.datetime.now()
-            self.log.info(userCredential)
+            # self.log.info(userCredential)
             db.commit()
 
             jsonStr["data"] = constants.STATUS_SUCCESS
@@ -338,7 +333,7 @@ class UserService:
             jsonStr["status"] = "Success"
 
         except Exception as ex:
-            self.log.exception(" MenuService")
+            # self.log.exception(" MenuService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
         # self.log.info("Response "+str(jsonStr))
@@ -360,7 +355,7 @@ class UserService:
             jsonStr["status"] = "Success"
 
         except Exception as ex:
-            self.log.exception(" MenuService")
+            # self.log.exception(" MenuService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
         # self.log.info("Response "+str(jsonStr))

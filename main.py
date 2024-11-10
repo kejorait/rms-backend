@@ -1,16 +1,31 @@
+import multiprocessing
 import os
 import re
 
+import chromedriver_autoinstaller
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
+from fastapi_socketio import SocketManager
 
+chromedriver_autoinstaller.install()
 os.makedirs("./logs", exist_ok=True)
 import router
 
 load_dotenv(override=True)
 
 app = FastAPI()
+socket_manager = SocketManager(app=app, mount_location='/socket.io', cors_allowed_origins=[])
+
+# @app.get("/")
+# async def index():
+#     return {"message": "Socket.IO server running!"}
+
+# Socket.IO event listener for "new-order" messages
+@socket_manager.on('new-order')
+async def handle_new_order(sid, data):
+    await socket_manager.emit('new-order', data)
+
 # Set up CORS for development environment
 allowed_origin_patterns = [
     r"^http?://localhost(:[0-9]+)?$",
@@ -18,7 +33,8 @@ allowed_origin_patterns = [
     r"^https://rms-admin-sigma\.vercel\.app$",
     r"http://100.92.3.3:5173",
     r"http://100.78.150.123:5000",
-    r"https://sweet-pothos-bf131d.netlify.app"
+    r"https://sweet-pothos-bf131d.netlify.app",
+    r"https://piehost.com"
 ]
 @app.middleware("http")
 async def cors_middleware(request: Request, call_next):
@@ -50,10 +66,13 @@ WORKERS_COUNT = os.getenv("WORKERS_COUNT")
 app.include_router(router.router)
 
 if __name__ == "__main__":
+    
+    multiprocessing.freeze_support()  # For Windows support
+    
     if ENV == "DEV":
         print("Running in development mode")
         uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), reload=True)
 
     else:
         print("Running in production mode")
-        uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), workers=WORKERS_COUNT)
+        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8000)), workers=WORKERS_COUNT)

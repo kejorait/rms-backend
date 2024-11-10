@@ -19,5 +19,5 @@ class BillDtl(DeclarativeOrigin):
     is_inactive = Column(String)
     is_delete = Column(String)
     updated_dt = Column(DateTime)
-    split_qty = Column(Integer)
+    split_qty = Column(Integer, default=0)
     desc = Column(String)

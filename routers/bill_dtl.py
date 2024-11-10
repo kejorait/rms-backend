@@ -68,3 +68,7 @@ def delete_bill_detail(request: bill_dtl.Delete, db: Session = Depends(get_db)):
 @router.post("/bulk-delete")
 def delete_bill_detail_bulk(request: bill_dtl.DeleteBulk, db: Session = Depends(get_db)):
     return BillDtlService().deleteBillDetailBulk(request, db)
+
+@router.post("/discount")
+def discount_bill_detail(request: bill_dtl.Discount, db: Session = Depends(get_db)):
+    return BillDtlService().discountBillDtl(request, db)

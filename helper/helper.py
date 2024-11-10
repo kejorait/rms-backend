@@ -1,15 +1,14 @@
 import datetime
-import math
-
-from fastapi import Depends, HTTPException, Query
-import jwt
-import pytz
-from helper import constants
-from helper.constants import (
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_DAYS,
-)
 import datetime as dt
+import math
+from zoneinfo import ZoneInfo
+
+import jwt
+from fastapi import Depends, HTTPException, Query
+
+from helper import constants
+from helper.constants import (ACCESS_TOKEN_EXPIRE_MINUTES,
+                              REFRESH_TOKEN_EXPIRE_DAYS)
 
 
 def datetimeToUTCLongJS(dt):
@@ -150,3 +149,7 @@ def paginate(
         "status": status,
         "isError": is_error,
     }
+
+def ensure_utc(dt: datetime) -> datetime:
+    """Convert naive datetime to UTC if it has no timezone."""
+    return dt.astimezone(ZoneInfo("Asia/Singapore"))  # Convert to UTC

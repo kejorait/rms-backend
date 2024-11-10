@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from helper import constants, printSelenium
 from models.app_setting import AppSetting
 from models.bill import Bill
@@ -113,7 +114,9 @@ class PrintService:
                     res["table_nm"] = "Waiting List - " + data[0].table_nm
                 res["no"] = data[0].BillDtl.bill_cd
             else:
+                res["created_by"] = ""
                 res["table_nm"] = ""
+                res["table_cd"] = ""
                 res["no"] = ""
             # res["address = "Jl. Satu Maret No.5, RT.5/RW.2, Pegadungan, Kec. Kalideres, Kota Jakarta Barat, Daerah Khusus Ibukota Jakarta 11830"
             res["time"] = datetime.now()
@@ -123,6 +126,7 @@ class PrintService:
             res["isError"] = constants.NO
             # jsonStr = json.dumps(res, default=str)
             jsonStr = res
+            jsonStr["dining_total"] = 0
         except Exception as ex:
             self.log.exception(" BillDtlService")
             jsonStr["isError"] = constants.YES
@@ -153,7 +157,6 @@ class PrintService:
                 TableSession.closed_dt,
             )
             .filter(
-                TableSession.table_cd == jsonStr["table_cd"],
                 TableSession.is_inactive == constants.NO,
                 TableSession.is_delete == constants.NO,
                 TableSession.bill_cd == bill_cd,
@@ -191,10 +194,12 @@ class PrintService:
                     data_list["total_amount"] += session_price
                 if session_list:
                     sessionList.append(session_list)
-
         jsonStr["sessionList"] = sessionList
         jsonStr["blData"] = data_list
         jsonStr["total_amount"] = jsonStr["blData"]['total_amount'] + jsonStr["dining_total"]
+        jsonStr.update(res)
+        jsonStr["print_amount"] = request.print_amount if request.print_amount else 1
+        jsonStr["html"] = request.html if request.html else None
 
         if request.print_to_printer:
             printSelenium.printBill(db, "payment", jsonStr)

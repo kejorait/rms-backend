@@ -1,14 +1,16 @@
-from datetime import datetime
 import datetime as dt
+from datetime import datetime
+from uuid import uuid4
 
+from fastapi.requests import Request
 from fastapi.responses import JSONResponse
+
+from helper import constants
+from models.bill import Bill
 from models.table import Table
 from models.waiting_list import WaitingList
-from models.bill import Bill
-from helper import constants
 from utils.tinylog import getLogger, setupLog
-from uuid import uuid4
-from fastapi.requests import Request
+
 
 class WaitingListService:
     name = "waitinglist"
@@ -25,57 +27,57 @@ class WaitingListService:
     # Get All Table
     def getAllWaitingList(self, request, db):
         jsonStr = {}
-        try:
-            # self.log.info("Response "+str(jsonStr))
+        # try:
+        # self.log.info("Response "+str(jsonStr))
 
-            query = db.query(
-                WaitingList,
-                Bill
-            )
-            query = query.join(Bill,
-            Bill.table_cd == WaitingList.cd,
-            isouter = True)
-            query = query.filter(Bill.is_paid == constants.NO)
-            query = query.filter(WaitingList.is_delete == constants.NO)
-            query = query.order_by(WaitingList.created_dt.asc())
-            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
-            data = query.all()
-            # print('data', data)
-            db.close()
-            res = {}
-            
-            listData = []
-            x = 1
-            for mdl_data in data:
-                data_list = {}
-                row = mdl_data.Bill
-                mdl = mdl_data.WaitingList
-                if row.is_paid == constants.YES:
-                    status = "EMPTY"
-                if row.is_closed == constants.YES and row.is_paid == constants.NO:
-                    status = "CLOSED"
-                if row.is_closed == constants.NO and row.is_paid == constants.NO:
-                    status = "OCCUPIED"
-                data_list["number"] = x
-                x=x+1
-                data_list["cd"] = mdl.cd
-                data_list["nm"] = mdl.nm
-                data_list["created_dt"] = mdl.created_dt 
-                data_list["status"] = status 
-            
-                listData.append(data_list)
+        query = db.query(
+            WaitingList,
+            Bill
+        )
+        query = query.join(Bill,
+        Bill.table_cd == WaitingList.cd,
+        isouter = True)
+        query = query.filter(Bill.is_paid == constants.NO)
+        query = query.filter(WaitingList.is_delete == constants.NO)
+        query = query.order_by(WaitingList.created_dt.asc())
+        # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
+        data = query.all()
+        # print('data', data)
+        db.close()
+        res = {}
+        
+        listData = []
+        x = 1
+        for mdl_data in data:
+            data_list = {}
+            row = mdl_data.Bill
+            mdl = mdl_data.WaitingList
+            if row.is_paid == constants.YES:
+                status = "EMPTY"
+            if row.is_closed == constants.YES and row.is_paid == constants.NO:
+                status = "CLOSED"
+            if row.is_closed == constants.NO and row.is_paid == constants.NO:
+                status = "OCCUPIED"
+            data_list["number"] = x
+            x=x+1
+            data_list["cd"] = mdl.cd
+            data_list["nm"] = mdl.nm
+            data_list["created_dt"] = mdl.created_dt 
+            data_list["status"] = status 
+        
+            listData.append(data_list)
 
-            res["data"] = listData
-            res["status"] = "Success"
-            res["isError"] = constants.NO
-            # jsonStr = json.dumps(res, default=str)
-            jsonStr = res
+        res["data"] = listData
+        res["status"] = "Success"
+        res["isError"] = constants.NO
+        # jsonStr = json.dumps(res, default=str)
+        jsonStr = res
             # self.log.info("Response "+str(jsonStr))
-        except Exception as ex:
-            self.log.exception(" TableService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
+        # except Exception as ex:
+        #     self.log.exception(" TableService")
+        #     jsonStr["isError"] = constants.YES
+        #     jsonStr["status"] = "Failed"
+        #     return jsonStr, 500
         return jsonStr
 
  # Get All Table

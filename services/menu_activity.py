@@ -67,8 +67,7 @@ class MenuService:
                 file = request.file
                 if file and self.allowed_file(file.filename):
                     filename = str(file.filename)
-                    filename_data = filename[:-4]
-                    filename_ext = filename[-4:]
+                    filename_data, filename_ext = os.path.splitext(filename)
                     timenow = str(datetime.datetime.now())
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
@@ -78,15 +77,17 @@ class MenuService:
                         + datenow
                         + "-"
                         + timenow
-                        + "."
                         + filename_ext
                     )
                     filename = secure_filename(filename)
-                    self.log.info(filename)
+                    # self.log.info(filename)
                     file_path = os.path.join(self.MENU_FOLDER, filename)
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                    # if os.path.exists(file_path):
                     with open(file_path, "wb") as buffer:
                         # Copy the file contents into the buffer
                         copyfileobj(file.file, buffer)
+                    
                     jsonStr["data"] = "Success"
                     jsonStr["isError"] = constants.NO
                     jsonStr["status"] = "Success"
@@ -97,7 +98,7 @@ class MenuService:
             db.refresh(menu)
 
         except Exception as ex:
-            self.log.error(ex)
+            # self.log.error(ex)
             response = JSONResponse(
                 status_code=500,
                 content={"data": str(ex), "isError": constants.YES, "status": "Failed"},
@@ -137,8 +138,7 @@ class MenuService:
                     jsonStr["status"] = "Success"
                 if file and self.allowed_file(file.filename):
                     filename = str(file.filename)
-                    filename_data = filename[:-4]
-                    filename_ext = filename[-4:]
+                    filename_data, filename_ext = os.path.splitext(filename)
                     timenow = str(datetime.datetime.now())
                     datenow = timenow[:-16]
                     timenow = timenow[11:]
@@ -148,15 +148,16 @@ class MenuService:
                         + datenow
                         + "-"
                         + timenow
-                        + "."
                         + filename_ext
                     )
                     filename = secure_filename(filename)
-                    self.log.info(filename)
+                    # self.log.info(filename)
                     file_path = os.path.join(self.MENU_FOLDER, filename)
+                    os.makedirs(os.path.dirname(file_path), exist_ok=True)
                     with open(file_path, "wb") as buffer:
-                        # Copy the file contents into the buffer23
+                        # Copy the file contents into the buffer
                         copyfileobj(file.file, buffer)
+
                     jsonStr["data"] = "Success"
                     jsonStr["isError"] = constants.NO
                     jsonStr["status"] = "Success"
@@ -166,7 +167,7 @@ class MenuService:
             db.refresh(menu)
 
         except Exception as ex:
-            self.log.error(ex)
+            # self.log.error(ex)
             response = JSONResponse(
                 status_code=500,
                 content={"data": str(ex), "isError": constants.YES, "status": "Failed"},
@@ -277,6 +278,8 @@ class MenuService:
                             menu_list_data["price"] = mdl2.Menu.price
                             menu_list_data["discount"] = mdl2.Menu.discount
                             menu_list_data["stock"] = mdl2.Menu.stock
+                            menu_list_data["final_price"] = mdl2.Menu.price - mdl2.Menu.discount
+                            menu_list_data["stock"] = mdl2.Menu.stock
                             menu_list_data["category_cd"] = mdl2.Menu.category_cd
                             menu_list_data["created_dt"] = mdl2.Menu.created_dt
                             menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -356,6 +359,7 @@ class MenuService:
                         menu_list_data["price"] = mdl2.Menu.price
                         menu_list_data["discount"] = mdl2.Menu.discount
                         menu_list_data["stock"] = mdl2.Menu.stock
+                        menu_list_data["final_price"] = (mdl2.Menu.price if mdl2.Menu.price else 0) - (mdl2.Menu.discount if mdl2.Menu.discount else 0)
                         menu_list_data["category_cd"] = mdl2.Menu.category_cd
                         menu_list_data["created_dt"] = mdl2.Menu.created_dt
                         menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -401,7 +405,7 @@ class MenuService:
             query = query.filter(Menu.cd == cd)
             data = query.first()
             # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
-            self.log.info(data)
+            # self.log.info(data)
             db.close()
             res = {}
             data_list = {}
@@ -432,7 +436,7 @@ class MenuService:
             res["isError"] = constants.NO
             jsonStr = res
         except Exception as ex:
-            self.log.error(ex)
+            # self.log.error(ex)
             response = JSONResponse(
                 status_code=500,
                 content={

@@ -15,8 +15,8 @@ class Table(DeclarativeOrigin):
     updated_by = Column(String)
     is_inactive = Column(String)
     is_delete = Column(String)
-    serial_sent = Column(String, default='N')
-    sent_closed = Column(String, default='N')
+    serial_sent = Column(String, default='Y')
+    sent_closed = Column(String, default='Y')
     serial_status = Column(String, default='OFF')
     serial_off_dt = Column(DateTime)
     

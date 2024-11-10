@@ -1,17 +1,17 @@
 from fastapi import APIRouter
 
 from routers import (app_setting, auth, bill, bill_dtl, category, dining_table,
-                     menu, role, stock, table, table_session, uploads, user,
-                     waiting_list)
+                     menu, role, stock, table, table_session,
+                     uploads, user, waiting_list)
 
-router = APIRouter(
-    prefix="/api/v1"
-)
+router = APIRouter(prefix="/api/v1")
+
 
 # health check
 @router.get("/health")
 def healthcheck():
     return {"status": "OK"}
+
 
 router.include_router(bill.router)
 

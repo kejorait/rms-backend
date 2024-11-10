@@ -3,9 +3,9 @@ import datetime as dt
 from fastapi.responses import JSONResponse
 
 from helper import constants
+from models.app_setting import AppSetting
 from models.bill import Bill
 from models.bill_dtl import BillDtl
-from models.menu import Menu
 from models.table import Table
 from models.table_session import TableSession
 from models.waiting_list import WaitingList
@@ -135,34 +135,61 @@ class BillService:
             bill = db.query(Bill).get(cd)
 
 
-            if request.bill_total:
-                if request.bill_total>0:
-                    bill.paid_type = request.paid_type
-                    bill.paid_amount = request.paid_amount
-                    bill.bill_total = request.bill_total
-                    bill.paid_change = request.bill_total - request.paid_amount
-                    bill.is_paid = constants.YES
-                    bill.paid_by = request.paid_by
-                    bill.paid_dt = dt.datetime.now()
+            bill.bill_total = request.bill_total if request.bill_total else 0
 
-            if request.billiard_total:
-                if request.billiard_total>0:
-                    bill.billiard_is_paid = constants.YES
-                    bill.billiard_closed_dt = request.closed_dt
-                    bill.billiard_total = request.billiard_total
-                    bill.billiard_amount = request
-                    bill.grand_total = request.bill_total + request.billiard_total
-                    bill.billiard_price = request.price
-                    bill.billiard_paid_dt = dt.datetime.now()
-                    bill.biliard_paid_by = request.paid_by
-
-                    query = db.query(TableSession.cd).filter(TableSession.bill_cd == cd)
-                    table_session = query.all()
-
-                    for tbs in table_session:
-                        query = db.query(TableSession).get(tbs.cd)
-                        query.is_paid = constants.YES
+            
+            bill.billiard_is_paid = constants.YES
+            bill.billiard_closed_dt = request.closed_dt
+            bill.billiard_total = request.billiard_total if request.billiard_total else 0
+            bill.billiard_price = request.price
+            bill.billiard_paid_dt = dt.datetime.now()
+            bill.biliard_paid_by = request.paid_by
                         
+
+            bill.paid_type = request.paid_type
+            bill.paid_amount = request.paid_amount
+            bill.is_paid = constants.YES
+            bill.paid_by = request.paid_by
+            dsc_billiard_subtotal = float(request.billiard_total if request.billiard_total else 0) - float(bill.billiard_discount if bill.billiard_discount else 0)
+            dsc_bill_subtotal = float(request.bill_total if request.bill_total else 0) - float(bill.bill_discount if bill.bill_discount else 0)
+
+            bill.dsc_billiard_subtotal = dsc_billiard_subtotal
+            bill.dsc_bill_subtotal = dsc_bill_subtotal
+
+            query = db.query(AppSetting)
+            query = query.filter(AppSetting.is_delete == constants.NO)
+            query = query.filter(AppSetting.is_inactive == constants.NO)
+            data = query.all()
+
+            data_settings = {setting.cd: setting.value for setting in data}
+
+            # Ensure data settings are converted to floats for percentage calculations
+            data_settings["pb1_bl"] = float(data_settings["pb1_bl"])
+            data_settings["service_bl"] = float(data_settings["service_bl"])
+            data_settings["pb1"] = float(data_settings["pb1"])
+            data_settings["service"] = float(data_settings["service"])
+
+            # Calculate billiard discount and service total
+            dsc_billiard_total = (dsc_billiard_subtotal * data_settings["pb1_bl"] / 100) + \
+                                (dsc_billiard_subtotal * data_settings["service_bl"] / 100)
+
+            # Calculate bill discount and service total
+            dsc_bill_total = (dsc_bill_subtotal * data_settings["pb1"] / 100) + \
+                            (dsc_bill_subtotal * data_settings["service"] / 100)
+
+            # Calculate grand total
+            bill.grand_total = round(dsc_bill_total + dsc_billiard_total + dsc_bill_subtotal + dsc_billiard_subtotal)
+
+            bill.paid_change = bill.grand_total - request.paid_amount
+            bill.paid_dt = dt.datetime.now()
+
+            query = db.query(TableSession.cd).filter(TableSession.bill_cd == cd)
+            table_session = query.all()
+
+            for tbs in table_session:
+                query = db.query(TableSession).get(tbs.cd)
+                query.is_paid = constants.YES
+
 
             db.commit()
 
@@ -189,57 +216,42 @@ class BillService:
             from_dt = request.from_dt
             to_dt = request.to_dt
 
-            query = db.query(Bill, Table.nm.label("table_nm"))
-            query = query.join(Table, Table.cd == Bill.table_cd)
-            query = query.join(BillDtl, BillDtl.bill_cd == Bill.cd)
-            query = query.filter(Bill.created_dt >= from_dt)
-            query = query.filter(Bill.created_dt <= to_dt)
+            query = db.query(Bill, Table.nm.label("table_nm"), WaitingList.nm.label("waiting_nm"))
+            query = query.join(Table, Table.cd == Bill.table_cd, isouter=True)
+            query = query.join(WaitingList, WaitingList.cd == Bill.table_cd, isouter=True)
+            query = query.join(BillDtl, BillDtl.bill_cd == Bill.cd, isouter=True)
+            # from_dt_utc = ensure_utc(request.from_dt)
+            # to_dt_utc = ensure_utc(request.to_dt)
+            from_dt_utc = dt.datetime.fromtimestamp(from_dt)
+            to_dt_utc =dt.datetime.fromtimestamp(to_dt)
+            query = query.filter(Bill.is_paid == constants.YES)
+            query = query.filter(Bill.created_dt >= from_dt_utc)
+            query = query.filter(Bill.created_dt <= to_dt_utc)
             query = query.order_by(Bill.created_dt.desc())
-            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
+            # print(query.statement.compile(compile_kwargs={"literal_binds": True}))
             row = query.all()
-            query = db.query(Bill, WaitingList.nm.label("table_nm"))
-            query = query.join(WaitingList, WaitingList.cd == Bill.table_cd)
-            query = query.join(BillDtl, BillDtl.bill_cd == Bill.cd)
-            query = query.filter(Bill.created_dt >= from_dt)
-            query = query.filter(Bill.created_dt <= to_dt)
-            query = query.order_by(Bill.created_dt.desc())
-            row_wl = query.all()
-            total_row = row_wl + row
-            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
-            db.close()
             listData = []
             subtotal = 0
-            for mdl in total_row:
+            for mdl in row:
                 data = {}
-                if "TABLE" not in mdl.table_nm:
-                    data["table_nm"] = "Waiting List - " + mdl.table_nm
+                if mdl.waiting_nm:
+                    data["table_nm"] = "Waiting List - " + mdl.table_nm if mdl.table_nm else ""
                 else:
-                    data["table_nm"] = mdl.table_nm + " - " + mdl.Bill.user_nm
+                    data["table_nm"] = mdl.table_nm if mdl.table_nm else "" + " - " + mdl.Bill.user_nm if mdl.Bill.user_nm else ""
                 data["bill_dt"] = mdl.Bill.created_dt
                 data["bill_cd"] = mdl.Bill.cd
-                query = db.query(BillDtl.qty, BillDtl.price).select_from(BillDtl)
-                query = query.join(Menu, Menu.cd == BillDtl.menu_cd)
-                query = query.filter(BillDtl.bill_cd == mdl.Bill.cd)
-                # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
-                bill_dtl = query.all()
-                self.log.info(bill_dtl)
-                totalData = 0
-                for mdl in bill_dtl:
-                    if mdl.qty > 0:
-                        totalData += float(mdl.price * mdl.qty)
-                data["total"] = totalData
-                subtotal += totalData
+                data["total"] = mdl.Bill.grand_total if mdl.Bill.grand_total else 0
+                subtotal += data["total"]
                 listData.append(data)
             res = {}
 
             listData.sort(key=lambda x: x["bill_dt"], reverse=True)
             res["data"] = listData
-            res["subtotal"] = subtotal
-            res["service"] = subtotal * 0.05
-            res["pb1"] = (subtotal + subtotal * 0.05) * 0.1
-            res["total"] = (
-                (subtotal + subtotal * 0.05) * 0.1 + subtotal * 0.05 + subtotal
-            )
+            subtotal = float(subtotal)
+            # res["subtotal"] = subtotal
+            # res["service"] = subtotal * 0.05
+            # res["pb1"] = (subtotal + subtotal * 0.05) * 0.1
+            res["total"] = subtotal
             # jsonStr = json.dumps(res, default=str)
             jsonStr = res
         except Exception as ex:

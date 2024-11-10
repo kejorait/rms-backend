@@ -1,7 +1,7 @@
 import os
 
 from fastapi import APIRouter, Depends
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 
 from helper.database import get_db
@@ -36,26 +36,27 @@ os.makedirs(LOGO_FILE_PATH, exist_ok=True)
 
 @router.get(CATEGORY_ROUTE + "{name}")
 def display_file_category(name: str):
-    return FileResponse(path=os.path.join(CATEGORY_FOLDER, name))
+    return FileResponse(path=os.path.join(CATEGORY_FOLDER, name)) if os.path.exists(os.path.join(CATEGORY_FOLDER, name)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
 @router.get(MENU_ROUTE + "{name}")
 def display_file_menu(name: str):
-    return FileResponse(path=os.path.join(MENU_FOLDER, name))
+    return FileResponse(path=os.path.join(MENU_FOLDER, name)) if os.path.exists(os.path.join(MENU_FOLDER, name)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
 @router.get(USER_ROUTE + "{name}")
 def display_file_user(name: str):
-    return FileResponse(path=os.path.join(USER_FOLDER, name))
+    return FileResponse(path=os.path.join(USER_FOLDER, name)) if os.path.exists(os.path.join(USER_FOLDER, name)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
 @router.get(LOGO_ROUTE + "/{ext}")
-def get_logo_image(ext):
-    return UploadActivity().getLogo(ext, LOGO_FILE_PATH)
+def get_logo_image(ext,
+    db: Session = Depends(get_db)):
+    return UploadActivity().getLogo(db, ext, LOGO_FILE_PATH) if os.path.exists(os.path.join(LOGO_FILE_PATH, ext)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 @router.post(LOGO_ROUTE)
 def upload_logo_image(
     request: uploads.UploadLogo = Depends(),
     db: Session = Depends(get_db),
 ):
-    return UploadActivity().uploadLogo(request, db,LOGO_FILE_PATH)
+    return UploadActivity().uploadLogo(request, db,LOGO_FILE_PATH) if request.file else JSONResponse(content={"message": "File not found"}, status_code=404)

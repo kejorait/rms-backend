@@ -3,14 +3,13 @@ from datetime import datetime
 from uuid import uuid4
 
 from helper import constants, printSelenium
-from models.app_setting import AppSetting
 from models.bill import Bill
 from models.bill_dtl import BillDtl
 from models.menu import Menu
 from models.table import Table
-from models.table_session import TableSession
 from models.user import User
 from models.waiting_list import WaitingList
+from services.sm.bill_dtl_activity import SmBillDtl
 from utils.tinylog import getLogger, setupLog
 
 
@@ -25,421 +24,16 @@ class BillDtlService:
 
     # Get Bill Detail
     def getBillDtlByTable(self, request, db):
-        jsonStr = {"status": "Success", "isError": constants.NO}
-        table_cd = request.table_cd
-        res = {"table_session": "", "subtotal": 0}
-        bill_cd = None
-        waiting_list = False
 
-        try:
-            # Fetch initial bill details
-            query = (
-                db.query(Bill.cd, Bill.is_closed, Bill.is_paid, Bill.user_nm)
-                .filter(
-                    Bill.table_cd == table_cd,
-                    Bill.is_delete == constants.NO,
-                    Bill.is_inactive == constants.NO,
-                    Bill.is_paid == constants.NO,
-                )
-                .order_by(Bill.created_dt.desc())
-            )
-            bill = query.first()
+        res = SmBillDtl().getBillDtl(request.table_cd, db, "table")
 
-            if bill:
-                bill_cd = bill.cd
-
-                # Fetch table session details
-                table_session_query = (
-                    db.query(
-                        TableSession.created_dt.label("session_created_dt"),
-                        TableSession.amount.label("session_amount"),
-                        TableSession.is_open.label("session_is_open"),
-                        TableSession.is_closed.label("session_is_closed"),
-                        TableSession.closed_dt,
-                    )
-                    .filter(
-                        TableSession.table_cd == table_cd,
-                        TableSession.is_inactive == constants.NO,
-                        TableSession.is_delete == constants.NO,
-                        TableSession.bill_cd == bill_cd,
-                    )
-                    .order_by(TableSession.created_dt.desc())
-                )
-
-                # self.log.info(table_session_query.statement.compile(compile_kwargs={"literal_binds": True}))
-                table_session = table_session_query.all()
-
-                # Initialize `data_list` to store results and determine session status
-                data_list = {}
-                data_list["total_open"] = 0
-                data_list["session_amount"] = 0
-                sessionList = []
-                if table_session:
-                    for tbs in table_session:
-                        session_list = {}
-
-                        if tbs.session_is_open == constants.YES:
-                            if tbs.session_is_closed == constants.YES:
-                                data_list["total_open"] += round(
-                                    (
-                                        tbs.closed_dt - tbs.session_created_dt
-                                    ).total_seconds()
-                                )
-                                session_list["session_created_dt"] = (
-                                    tbs.session_created_dt
-                                )
-                                session_list["session_closed_dt"] = tbs.closed_dt
-
-                        if tbs.session_is_open == constants.NO:
-                            if tbs.session_is_closed == constants.YES:
-                                session_list["session_created_dt"] = (
-                                    tbs.session_created_dt
-                                )
-                                session_list["session_closed_dt"] = tbs.closed_dt
-                            data_list["session_amount"] += tbs.session_amount
-
-                        if session_list:
-                            sessionList.append(session_list)
-
-                    # Assign query results to `data_list`
-                    data_list["session_created_dt"] = table_session[
-                        0
-                    ].session_created_dt
-                    # data_list["session_amount"] = table_session.session_amount
-                    data_list["sessions"] = sessionList
-                    data_list["session_is_open"] = table_session[0].session_is_open
-                    data_list["session_is_closed"] = table_session[0].session_is_closed
-                    data_list["closed_dt"] = table_session[0].closed_dt
-
-                    # Add logic for determining `session_status`
-                    if table_session[0].session_is_open == constants.YES:
-                        session_status = "OPEN"
-                    elif table_session[0].session_is_open == constants.NO:
-                        session_status = "FIXED"
-                    else:
-                        session_status = "CLOSED"  # In case no conditions match
-
-                    # Add `session_status` to `data_list`
-                    data_list["session_status"] = session_status
-
-                res["table_session"] = data_list
-
-            # Close the session and fetch main query details
-            db.close()
-
-            # Main bill detail query for menu items
-            bill_dtl_query = (
-                db.query(
-                    Table.cd,
-                    Table.nm.label("table_nm"),
-                    BillDtl,
-                    BillDtl.price,
-                    BillDtl.discount,
-                    Menu.nm.label("menu_nm"),
-                    Menu.img,
-                    Bill.user_nm,
-                )
-                .join(Menu, Menu.cd == BillDtl.menu_cd)
-                .join(Bill, Bill.cd == BillDtl.bill_cd)
-                .join(Table, Table.cd == Bill.table_cd)
-                .filter(BillDtl.qty > 0)
-                .order_by(BillDtl.created_dt.asc())
-            )
-
-            if bill_cd:
-                bill_dtl_query = bill_dtl_query.filter(Bill.cd == bill_cd)
-
-            data = bill_dtl_query.all()
-            db.close()
-
-            listData = []
-            for mdl in data:
-                if mdl.BillDtl.qty > 0:
-                    data_list = {
-                        "cd": mdl.BillDtl.cd,
-                        "bill_cd": mdl.BillDtl.bill_cd,
-                        "created_dt": datetime.timestamp(mdl.BillDtl.created_dt),
-                        "created_by": mdl.BillDtl.created_by,
-                        "is_inactive": mdl.BillDtl.is_inactive,
-                        "is_delete": mdl.BillDtl.is_delete,
-                        "process_status": mdl.BillDtl.process_status,
-                        "menu_cd": mdl.BillDtl.menu_cd,
-                        "user_nm": mdl.BillDtl.user_nm,
-                        "menu_nm": mdl.menu_nm,
-                        "menu_img": mdl.img,
-                        "qty": mdl.BillDtl.qty,
-                        "desc": mdl.BillDtl.desc,
-                        "split_qty": mdl.BillDtl.qty - mdl.BillDtl.split_qty,
-                        "init_qty": mdl.BillDtl.init_qty,
-                        "updated_dt": mdl.BillDtl.updated_dt,
-                        "price": mdl.price,
-                        "discount": mdl.discount,
-                        "price_discount": mdl.price - mdl.discount,
-                        "total": (mdl.price - mdl.discount) * mdl.BillDtl.qty,
-                    }
-                    res["subtotal"] += data_list["total"]
-                    listData.append(data_list)
-
-            # Calculate additional charges and set bill status
-            res["pb1"] = res["subtotal"] * 0.1
-            res["service"] = res["subtotal"] * 0.05
-            res["total"] = res["subtotal"] + res["pb1"] + res["service"]
-
-            if bill:
-                if bill.is_closed == constants.NO and bill.is_paid == constants.YES:
-                    status = "EMPTY"
-                elif bill.is_closed == constants.YES and bill.is_paid == constants.NO:
-                    status = "CLOSED"
-                else:
-                    status = "OCCUPIED"
-            else:
-                status = "EMPTY"
-
-            res["bill_status"] = status
-
-            # Fetch table name or handle waiting list
-            table_name_query = (
-                db.query(Table.nm, Table.is_billiard)
-                .filter(Table.cd == table_cd)
-                .first()
-            )
-            if table_name_query:
-                res["table_nm"] = table_name_query.nm
-                res["is_billiard"] = table_name_query.is_billiard
-            else:
-                waiting_list = True
-                waiting_query = (
-                    db.query(
-                        WaitingList.cd,
-                        WaitingList.nm.label("table_nm"),
-                        BillDtl,
-                        Menu.price,
-                        Menu.nm.label("menu_nm"),
-                        Menu.img,
-                        Bill.user_nm,
-                    )
-                    .join(Menu, Menu.cd == BillDtl.menu_cd)
-                    .join(Bill, Bill.cd == BillDtl.bill_cd)
-                    .join(WaitingList, WaitingList.cd == Bill.table_cd)
-                    .filter(Bill.cd == bill_cd)
-                    .order_by(BillDtl.created_dt.asc())
-                )
-                waiting_data = waiting_query.all()
-                db.close()
-
-                if waiting_data:
-                    res["table_nm"] = (
-                        "Waiting List - " + waiting_data[0].table_nm
-                        if waiting_list
-                        else ""
-                    )
-                    listData = [
-                        {
-                            "cd": mdl.BillDtl.cd,
-                            "bill_cd": mdl.BillDtl.bill_cd,
-                            "created_dt": datetime.timestamp(mdl.BillDtl.created_dt),
-                            "created_by": mdl.BillDtl.created_by,
-                            "is_inactive": mdl.BillDtl.is_inactive,
-                            "is_delete": mdl.BillDtl.is_delete,
-                            "process_status": mdl.BillDtl.process_status,
-                            "menu_cd": mdl.BillDtl.menu_cd,
-                            "user_nm": mdl.BillDtl.user_nm,
-                            "menu_nm": mdl.menu_nm,
-                            "menu_img": mdl.img,
-                            "qty": mdl.BillDtl.qty,
-                            "desc": mdl.BillDtl.desc,
-                            "split_qty": mdl.BillDtl.qty - mdl.BillDtl.split_qty,
-                            "updated_dt": mdl.BillDtl.updated_dt,
-                            "price": mdl.price,
-                            "total": mdl.price * mdl.BillDtl.qty,
-                        }
-                        for mdl in waiting_data
-                        if mdl.BillDtl.qty > 0
-                    ]
-
-            # Final response composition
-            if bill:
-                res["user_nm"] = bill.user_nm
-                res["bill_cd"] = bill.cd
-            else:
-                res["user_nm"] = ""
-                res["bill_cd"] = ""
-            res["data"] = listData
-            jsonStr.update(res)
-
-        except Exception as ex:
-            self.log.exception("Error in getBillDtlByTable")
-            jsonStr.update({"isError": constants.YES, "status": "Failed"})
-            return jsonStr, 500
-
-        return jsonStr
+        return res
 
     def getBillDtlByBillCd(self, request, db):
-        waiting_list = False
-        jsonStr = {}
-        try:
-            bill_cd = request.bill_cd
 
-            # Query to get the latest session based on the highest created date in TableSession
-            latest_session = (
-                db.query(TableSession)
-                .filter(TableSession.bill_cd == bill_cd)
-                .order_by(TableSession.created_dt.desc())
-                .limit(1)
-                .subquery()
-            )
+        res = SmBillDtl().getBillDtl(request.bill_cd, db, "bill")
 
-            query = db.query(
-                Table.cd,
-                BillDtl,
-                Menu.price,
-                Menu.nm,
-                Menu.img,
-                Bill.is_closed,
-                Bill.is_paid,
-                latest_session.c.created_dt.label("session_created_dt"),
-                latest_session.c.amount.label("session_amount"),
-                latest_session.c.is_open.label("session_is_open"),
-                latest_session.c.is_closed.label("session_is_closed"),
-            )
-
-            # Join with the latest session subquery instead of the full TableSession table
-            query = query.join(Menu, Menu.cd == BillDtl.menu_cd)
-            query = query.join(Bill, Bill.cd == BillDtl.bill_cd)
-            query = query.join(Table, Table.cd == Bill.table_cd)
-            query = query.join(latest_session, latest_session.c.bill_cd == Bill.cd)
-            query = query.filter(Bill.cd == bill_cd)
-            query = query.filter(BillDtl.qty > 0)
-            query = query.order_by(BillDtl.created_dt.asc())
-            data = query.all()
-
-            db.close()
-            res = {}
-            listData = []
-
-            if data:
-                for mdl in data:
-                    if mdl.BillDtl.qty > 0:
-                        session_status = (
-                            "CLOSED"  # Default status if none of the conditions match
-                        )
-                        if mdl.session_is_open == constants.YES:
-                            session_status = "OPEN"
-                        elif mdl.session_is_open == constants.NO:
-                            session_status = "FIXED"
-
-                        data_list = {
-                            "table_cd": mdl.cd,
-                            "cd": mdl.BillDtl.cd,
-                            "bill_cd": mdl.BillDtl.bill_cd,
-                            "created_dt": datetime.timestamp(mdl.BillDtl.created_dt),
-                            "created_by": mdl.BillDtl.created_by,
-                            "is_inactive": mdl.BillDtl.is_inactive,
-                            "is_delete": mdl.BillDtl.is_delete,
-                            "process_status": mdl.BillDtl.process_status,
-                            "menu_cd": mdl.BillDtl.menu_cd,
-                            "user_nm": mdl.BillDtl.user_nm,
-                            "menu_nm": mdl.nm,
-                            "menu_img": mdl.img,
-                            "qty": int(mdl.BillDtl.qty),
-                            "desc": mdl.BillDtl.desc,
-                            "split_qty": int(mdl.BillDtl.qty - mdl.BillDtl.split_qty),
-                            "updated_dt": mdl.BillDtl.updated_dt,
-                            "price": mdl.price,
-                            "total": float(mdl.price) * int(mdl.BillDtl.qty),
-                            "session_status": session_status,
-                            "session_created_dt": mdl.session_created_dt,
-                            "session_amount": mdl.session_amount,
-                            "session_is_open": mdl.session_is_open,
-                            "session_is_closed": mdl.session_is_closed,
-                        }
-                        listData.append(data_list)
-            else:
-                # Query WaitingList as fallback
-                query = db.query(
-                    WaitingList.cd,
-                    WaitingList.nm.label("table_nm"),
-                    BillDtl,
-                    Menu.price,
-                    Menu.nm.label("menu_nm"),
-                    Menu.img,
-                    Bill.user_nm,
-                    Bill.is_closed,
-                    Bill.is_paid,
-                )
-                query = query.join(Menu, Menu.cd == BillDtl.menu_cd)
-                query = query.join(Bill, Bill.cd == BillDtl.bill_cd)
-                query = query.join(WaitingList, WaitingList.cd == Bill.table_cd)
-                query = query.filter(Bill.cd == bill_cd)
-                query = query.filter(BillDtl.qty > 0)
-                query = query.order_by(BillDtl.created_dt.asc())
-                data = query.all()
-
-                db.close()
-                waiting_list = True
-
-                res["table_nm"] = data[0].table_nm if data else ""
-                listData = []
-                for mdl in data:
-                    if mdl.BillDtl.qty > 0:
-                        data_list = {
-                            "cd": mdl.BillDtl.cd,
-                            "bill_cd": mdl.BillDtl.bill_cd,
-                            "created_dt": datetime.timestamp(mdl.BillDtl.created_dt),
-                            "created_by": mdl.BillDtl.created_by,
-                            "is_inactive": mdl.BillDtl.is_inactive,
-                            "is_delete": mdl.BillDtl.is_delete,
-                            "process_status": mdl.BillDtl.process_status,
-                            "menu_cd": mdl.BillDtl.menu_cd,
-                            "user_nm": mdl.BillDtl.user_nm,
-                            "menu_nm": mdl.menu_nm,
-                            "menu_img": mdl.img,
-                            "qty": int(mdl.BillDtl.qty),
-                            "desc": mdl.BillDtl.desc,
-                            "split_qty": int(mdl.BillDtl.qty - mdl.BillDtl.split_qty),
-                            "init_qty": mdl.BillDtl.init_qty,
-                            "updated_dt": mdl.BillDtl.updated_dt,
-                            "price": mdl.price,
-                            "total": float(mdl.price) * int(mdl.BillDtl.qty),
-                        }
-                        listData.append(data_list)
-
-            # Check bill status
-            query = db.query(Bill).filter(Bill.cd == bill_cd)
-            data_bill = query.first()
-            db.close()
-
-            status = ""
-            if data_bill:
-                if (
-                    data_bill.is_closed == constants.NO
-                    and data_bill.is_paid == constants.YES
-                ):
-                    status = "EMPTY"
-                elif (
-                    data_bill.is_closed == constants.YES
-                    and data_bill.is_paid == constants.NO
-                ):
-                    status = "CLOSED"
-                elif (
-                    data_bill.is_closed == constants.NO
-                    and data_bill.is_paid == constants.NO
-                ):
-                    status = "OCCUPIED"
-
-            res["data"] = listData
-            res["status"] = "Success"
-            res["bill_status"] = status
-            res["isError"] = constants.NO
-            jsonStr = res
-
-        except Exception as ex:
-            self.log.exception(" BillDtlService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
-
-        return jsonStr
+        return res
 
     def getBillDtlByBillCdPrint(self, request, db):
         waiting_list = False
@@ -504,10 +98,9 @@ class BillDtlService:
                     data_list["menu_nm"] = mdl.nm
                     data_list["menu_img"] = mdl.img
                     data_list["qty"] = int(mdl.BillDtl.qty)
+                    data_list["init_qty"] = int(mdl.BillDtl.init_qty)
                     data_list["desc"] = mdl.BillDtl.desc
-                    data_list["split_qty"] = int(
-                        mdl.BillDtl.qty - mdl.BillDtl.split_qty
-                    )
+                    data_list["split_qty"] = int(mdl.BillDtl.split_qty)
                     data_list["updated_dt"] = mdl.BillDtl.updated_dt
                     data_list["price"] = mdl.BillDtl.price
                     data_list["discount"] = mdl.BillDtl.discount
@@ -801,7 +394,6 @@ class BillDtlService:
                 query = db.query(User.name)
                 query = query.filter(User.cd == request.orders[0].created_by)
                 printData["created_by"] = query.first().name
-                # printData["print_settings"] = print_settings
 
                 for mdl in request.orders:
                     billDtl = BillDtl()
@@ -816,6 +408,16 @@ class BillDtlService:
                     billDtl.qty = mdl.qty
 
                     menu = db.query(Menu).filter(Menu.cd == mdl.menu_cd).first()
+
+                    if menu.stock == 0:
+                        jsonStr["data"] = "Stock is empty"
+                        jsonStr["isError"] = constants.YES
+                        jsonStr["status"] = "Failed"
+                        return jsonStr
+
+                    # if not request.print_to_printer:
+                    menu.stock = menu.stock - mdl.qty
+
                     billDtl.price = menu.price
                     billDtl.discount = menu.discount
                     billDtl.init_qty = mdl.qty
@@ -835,8 +437,9 @@ class BillDtlService:
                     jsonStr["status"] = "Success"
 
                 if request.print_to_printer:
+                    printData["print_amount"] = request.print_amount if request.print_amount else 2
                     printSelenium.printBill(db, "new_order", printData)
-                
+
             else:
                 query = db.query(Bill)
                 query = query.filter(Bill.cd == request.bill_cd)
@@ -853,9 +456,10 @@ class BillDtlService:
                 return jsonStr, 500
 
         except Exception as ex:
-            self.log.exception(" BillDtlService")
+            # self.log.exception(" BillDtlService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
+            jsonStr["data"] = ex
 
             return jsonStr, 500
         # self.log.info("Response " + str(jsonStr))
@@ -896,6 +500,32 @@ class BillDtlService:
 
             cd = request.bill_dtl_cd
             billDtl = db.query(BillDtl).get(cd)
+            menu = db.query(Menu).filter(Menu.cd == billDtl.menu_cd).first()
+
+            if menu.stock == 0 and request.qty > billDtl.qty:
+                jsonStr["data"] = "Stock is empty"
+                jsonStr["isError"] = constants.YES
+                jsonStr["status"] = "Failed"
+                return jsonStr
+
+            # Ensure requested quantity does not exceed available stock + current billDtl quantity
+            if request.qty > billDtl.qty + menu.stock:
+                jsonStr["data"] = "Requested quantity exceeds available stock"
+                jsonStr["isError"] = constants.YES
+                jsonStr["status"] = "Failed"
+                return jsonStr
+
+            # Adjust stock based on the difference between request.qty and billDtl.qty
+            qty_difference = request.qty - billDtl.qty
+
+            if qty_difference < 0:
+                # If request.qty is less than billDtl.qty, increase the stock
+                menu.stock += abs(qty_difference)
+            elif qty_difference > 0:
+                # If request.qty is greater than billDtl.qty, decrease the stock
+                menu.stock -= qty_difference
+
+            # Update billDtl quantity and timestamp
             billDtl.qty = request.qty
             billDtl.updated_dt = dt.datetime.now()
 
@@ -945,14 +575,11 @@ class BillDtlService:
             data = request.data
             for mdl in data:
 
-                # self.log.info(mdl)
-                query = db.query(BillDtl.split_qty)
-                query = query.filter(BillDtl.cd == mdl["bill_dtl_cd"])
-                # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
-                row = query.first()
-                db.close()
-                billDtl = db.query(BillDtl).get(mdl["bill_dtl_cd"])
-                billDtl.qty = mdl["qty"]
+                query = db.query(BillDtl)
+                query = query.filter(BillDtl.cd == mdl.bill_dtl_cd)
+                billDtl = query.first()
+                billDtl.qty = billDtl.qty - mdl.split_qty
+                billDtl.split_qty = billDtl.split_qty + mdl.split_qty
 
                 db.commit()
 
@@ -964,6 +591,28 @@ class BillDtlService:
             self.log.exception(" BillDtlService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
+            return jsonStr, 500
+        # self.log.info("Response " + str(jsonStr))
+        return jsonStr
+
+    def discountBillDtl(self, request, db):
+        jsonStr = {}
+        try:
+            # self.log.info("Response "+str(jsonStr))
+            cd = request.cd
+            bill = db.query(Bill).get(cd)
+            bill.bill_discount = request.bill_discount
+            bill.billiard_discount = request.billiard_discount
+
+            db.commit()
+
+            jsonStr["data"] = constants.STATUS_SUCCESS
+            jsonStr["isError"] = constants.NO
+            jsonStr["status"] = "Success"
+
+        except Exception as ex:
+            self.log.exception(" BillService")
+            jsonStr.update({"isError": constants.YES, "status": "Failed"})
             return jsonStr, 500
         # self.log.info("Response " + str(jsonStr))
         return jsonStr

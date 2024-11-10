@@ -35,4 +35,11 @@ async def login_admin(
     request: auth.Login,
     db: Session = Depends(get_db)
 ):
-    return UserCredentialService().checkCredentialAdmin(request, db, SECRET_KEY)
+    return UserCredentialService().loginAdmin(request, db, SECRET_KEY)
+
+@router.post("/admin/login-check")
+async def check_admin_credential(
+    request: auth.CheckAdmin,
+    db: Session = Depends(get_db)
+):
+    return UserCredentialService().checkCredentialSupervisor(request, db, SECRET_KEY)

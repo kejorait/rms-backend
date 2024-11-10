@@ -20,4 +20,5 @@ class TableSession(DeclarativeOrigin):
     user_nm = Column(String)
     bill_cd = Column(String)
     price = Column(Integer, default=0)
+    interval = Column(Integer, default=0)
     

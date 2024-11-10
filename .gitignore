@@ -21,3 +21,7 @@ key.pem
 .well-known/pki-validation/F8DDD1DB9A884C7315F5C8FE2FB68079.txt
 .well-known/pki-validation/F8DDD1DB9A884C7315F5C8FE2FB68079.txt
 key.pem
+/build
+*.exe
+*.pdf
+*.spec
