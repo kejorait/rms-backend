@@ -34,9 +34,9 @@ def print_pdf_windows(pdf_path, printer_name, print_amount=1, sumatra_path="C:\\
             for _ in range(print_amount):
                 subprocess.run(command, check=True)
                 # Set up a non-blocking 5-second delay
-                threading.Timer(5, lambda: None).start()
-                
-            print("Print job sent successfully.")
+                print("Print job sent successfully.")
+                if print_amount > 1:
+                    threading.Timer(5, lambda: None).start()
         except subprocess.CalledProcessError as e:
             print(f"Error occurred while printing: {e}")
         except Exception as e:
