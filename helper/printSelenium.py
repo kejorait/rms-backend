@@ -30,10 +30,6 @@ def print_pdf_windows(pdf_path, printer_name, print_amount=1, sumatra_path="C:\\
             "-print-settings", "portrait,fit",
             pdf_path
         ]
-        # Run the command
-        for _ in range(print_amount):
-            subprocess.run(command, check=True)
-            time.sleep(5)
         print("Print job sent successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error occurred while printing: {e}")
@@ -116,7 +112,10 @@ def print_html(html_content, download_dir, print_settings, print_amount):
 
     # Check if the PDF file was created successfully
     if os.path.exists(pdf_path):
-        print_pdf_windows(pdf_path, print_settings["printer"], print_amount)
+        for i in range(print_amount):
+            print_pdf_windows(pdf_path, print_settings["printer"], print_amount)
+            if print_amount > 1:
+                time.delay(5)
         # print_pdf_windows(pdf_path, print_settings["printer"])
         
     # delete the pdf file
