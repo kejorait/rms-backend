@@ -20,22 +20,30 @@ def print_pdf_windows(pdf_path, printer_name, print_amount=1, sumatra_path="C:\\
     if not os.path.isfile(sumatra_path):
         raise FileNotFoundError(f"The SumatraPDF executable does not exist: {sumatra_path}")
 
-    try:
-        print(f"Printing to {printer_name} using SumatraPDF")
-        # Command to print the PDF
-        command = [
-            sumatra_path,
-            "-print-to", printer_name,
-            "-print-settings", "portrait,fit,{0}x".format(print_amount),
-            pdf_path
-        ]
-        # Run the command
-        subprocess.run(command, check=True)
-        print("Print job sent successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred while printing: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+    def delayed_print():
+        try:
+            print(f"Printing to {printer_name} using SumatraPDF")
+            # Command to print the PDF
+            command = [
+                sumatra_path,
+                "-print-to", printer_name,
+                "-print-settings", "portrait,fit",
+                pdf_path
+            ]
+            # Run the command
+            for _ in range(print_amount):
+                subprocess.run(command, check=True)
+                # Set up a non-blocking 5-second delay
+                threading.Timer(5, lambda: None).start()
+                
+            print("Print job sent successfully.")
+        except subprocess.CalledProcessError as e:
+            print(f"Error occurred while printing: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+    # Execute the print function
+    delayed_print()
 
 def print_html(html_content, download_dir, print_settings, print_amount):
     LOGGER.setLevel(logging.WARNING)
@@ -435,6 +443,7 @@ def printBill(db, billType, printData):
     
     if billType == "new_order":
         html_content = generateKitchenBillHtml(printData)
+        printData["print_amount"] = 2
     elif billType == "payment":
         # html_content = generateFinalBill(printData, print_settings)
         if printData["html"]:
