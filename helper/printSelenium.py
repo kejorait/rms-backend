@@ -21,20 +21,27 @@ def print_pdf_windows(pdf_path, printer_name, print_amount=1, sumatra_path="C:\\
     if not os.path.isfile(sumatra_path):
         raise FileNotFoundError(f"The SumatraPDF executable does not exist: {sumatra_path}")
 
-    try:
-        print(f"Printing to {printer_name} using SumatraPDF")
-        # Command to print the PDF
-        command = [
-            sumatra_path,
-            "-print-to", printer_name,
-            "-print-settings", "portrait,fit",
-            pdf_path
-        ]
-        print("Print job sent successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error occurred while printing: {e}")
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+    def delayed_print():
+        try:
+            print(f"Printing to {printer_name} using SumatraPDF")
+            # Command to print the PDF
+            command = [
+                sumatra_path,
+                "-print-to", printer_name,
+                "-print-settings", "portrait,fit",
+                pdf_path
+            ]
+            # Run the command
+            for _ in range(print_amount):
+                subprocess.run(command, check=True)
+                # Set up a non-blocking 5-second delay
+                print("Print job sent successfully.")
+                if print_amount > 1:
+                    threading.Timer(5, lambda: None).start()
+        except subprocess.CalledProcessError as e:
+            print(f"Error occurred while printing: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
 
 def print_html(html_content, download_dir, print_settings, print_amount):
     LOGGER.setLevel(logging.WARNING)
