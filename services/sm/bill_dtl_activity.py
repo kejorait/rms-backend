@@ -257,8 +257,18 @@ class SmBillDtl:
         # res["total"] = res["subtotal"] + res["pb1"] + res["service"]
         if bill:
             bill_total = res["subtotal"]
-            pb1 = bill.pb1 or data_settings["pb1"]
-            service = bill.service or data_settings["service"]
+            pb1 = data_settings["pb1"]
+            if bill.pb1:
+                if bill.pb1 != '':
+                    pb1 = bill.pb1
+            service = data_settings["service"]
+            if bill.service:
+                if bill.service != '':
+                    service = bill.service
+            if pb1 == '':
+                pb1 = 0
+            if service == '':
+                service = 0
             bill_total = float(bill_total)
             pb1 = float(pb1)
             service = float(service)
@@ -363,8 +373,19 @@ class SmBillDtl:
             res["dsc_billiard_subtotal"] = float(res["dsc_billiard_subtotal"])
 
             res["table_session"]["dsc_billiard_total"] = res["dsc_billiard_subtotal"]
-            service_bl = bill.service_bl if bill.service_bl else data_settings["service_bl"]
-            pb1_bl = bill.pb1_bl if bill.pb1_bl else data_settings["pb1_bl"]
+
+            service_bl = data_settings["service_bl"]
+            if bill.service_bl:
+                if bill.service_bl != '':
+                    service_bl = bill.service_bl
+            pb1_bl = data_settings["pb1_bl"]
+            if bill.pb1_bl:
+                if bill.pb1_bl != '':
+                    pb1_bl = bill.pb1_bl
+            if pb1_bl == '':
+                pb1_bl = 0
+            if service_bl == '':
+                service_bl = 0
             res["table_session"]["pb1_bl"] = (
                 res["dsc_billiard_subtotal"] * float(pb1_bl) / 100
             )
