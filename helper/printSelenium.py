@@ -14,7 +14,7 @@ from models.app_setting import AppSetting
 
 
 # Printing functions for Windows
-def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe", print_amount=1):
+def print_pdf_windows(pdf_path, printer_name, print_amount=1, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"):
     if not os.path.isfile(pdf_path):
         raise FileNotFoundError(f"The PDF file does not exist: {pdf_path}")
     if not os.path.isfile(sumatra_path):
