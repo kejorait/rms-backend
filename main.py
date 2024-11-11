@@ -30,11 +30,7 @@ async def handle_new_order(sid, data):
 allowed_origin_patterns = [
     r"^http?://localhost(:[0-9]+)?$",
     r"^https?://([a-zA-Z0-9-]+\.)*kejora\.my\.id(:[0-9]+)?$",
-    r"^https://rms-admin-sigma\.vercel\.app$",
     r"http://100.92.3.3:5173",
-    r"http://100.78.150.123:5000",
-    r"https://sweet-pothos-bf131d.netlify.app",
-    r"https://piehost.com"
 ]
 @app.middleware("http")
 async def cors_middleware(request: Request, call_next):

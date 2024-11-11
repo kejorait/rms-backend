@@ -1,18 +1,8 @@
-import json
-from datetime import datetime
-import datetime as dt
 from fastapi.responses import JSONResponse
-from rich.console import Console
-from models.menu import Menu
-from models.table import Table
 from models.role import Role
-from models.category import Category
-from helper.jsonHelper import ExtendEncoder
 from helper import constants
 from utils.tinylog import getLogger, setupLog
-from uuid import uuid4
 from fastapi.requests import Request
-from fastapi import HTTPException
 
 class RoleService:
     

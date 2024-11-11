@@ -7,16 +7,14 @@ import uuid
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.remote_connection import LOGGER
-from webdriver_manager.chrome import ChromeDriverManager
 
 from helper import constants
 from models.app_setting import AppSetting
 
 
 # Printing functions for Windows
-def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"):
+def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe", print_amount=1):
     if not os.path.isfile(pdf_path):
         raise FileNotFoundError(f"The PDF file does not exist: {pdf_path}")
     if not os.path.isfile(sumatra_path):
@@ -28,7 +26,7 @@ def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\S
         command = [
             sumatra_path,
             "-print-to", printer_name,
-            "-print-settings", "portrait,fit",
+            "-print-settings", "portrait,fit,{0}x".format(print_amount),
             pdf_path
         ]
         # Run the command
@@ -39,7 +37,7 @@ def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\S
     except Exception as e:
         print(f"Unexpected error: {e}")
 
-def print_html(html_content, download_dir, print_settings):
+def print_html(html_content, download_dir, print_settings, print_amount):
     LOGGER.setLevel(logging.WARNING)
     # Suppress specific libraries' logging to CRITICAL level
     logging.getLogger("webdriver_manager").setLevel(logging.CRITICAL)
@@ -71,8 +69,8 @@ def print_html(html_content, download_dir, print_settings):
     chrome_options.add_argument("--proxy-bypass-list=*")
 
     # Initialize Chrome WebDriver
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(options=chrome_options)
 
     # Convert HTML content to a base64-encoded data URL
     html_base64 = base64.b64encode(html_content.encode("utf-8")).decode("utf-8")
@@ -115,7 +113,7 @@ def print_html(html_content, download_dir, print_settings):
 
     # Check if the PDF file was created successfully
     if os.path.exists(pdf_path):
-        print_pdf_windows(pdf_path, print_settings["printer"])
+        print_pdf_windows(pdf_path, print_settings["printer"], print_amount)
         # print_pdf_windows(pdf_path, print_settings["printer"])
         
     # delete the pdf file
@@ -444,9 +442,9 @@ def printBill(db, billType, printData):
     # Run the print function
 
     def background_print():
-        for i in range(printData["print_amount"]):
-            # print(html_content)
-            print_html(html_content, download_directory, print_settings)
+        # for i in range(printData["print_amount"]):
+        #     # print(html_content)
+        print_html(html_content, download_directory, print_settings, printData["print_amount"])
 
     # Run the printing in a background thread
     print_thread = threading.Thread(target=background_print)

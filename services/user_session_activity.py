@@ -1,13 +1,8 @@
-import json
-from datetime import datetime
 import datetime as dt
-from models.user_session import UserSession
-from helper.jsonHelper import ExtendEncoder
 from helper import constants
 from utils.tinylog import getLogger, setupLog
 from uuid import uuid4
 from fastapi.requests import Request
-from fastapi import HTTPException
 
 class UserSessionService:
     name = "UserSession"
