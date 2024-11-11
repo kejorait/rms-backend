@@ -246,6 +246,15 @@ class SmBillDtl:
 
         data_settings = {setting.cd: setting.value for setting in data}
 
+        if data_settings["pb1_bl"] == '':
+            data_settings["pb1_bl"] = 0
+        if data_settings["service_bl"] == '':
+            data_settings["service_bl"] = 0
+        if data_settings["pb1"] == '':
+            data_settings["pb1"] = 0
+        if data_settings["service"] == '':
+            data_settings["service"] = 0
+
         service = (
             bill.service
             if bill and bill.service is not None

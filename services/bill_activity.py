@@ -128,82 +128,91 @@ class BillService:
     # Paid Bill
     def paidBill(self, request, db):
         jsonStr = {}
-        try:
-            # self.log.info("Response "+str(jsonStr))
-            cd = request.cd
+        # try:
+        # self.log.info("Response "+str(jsonStr))
+        cd = request.cd
 
-            bill = db.query(Bill).get(cd)
-
-
-            bill.bill_total = request.bill_total if request.bill_total else 0
-
-            
-            bill.billiard_is_paid = constants.YES
-            bill.billiard_closed_dt = request.closed_dt
-            bill.billiard_total = request.billiard_total if request.billiard_total else 0
-            bill.billiard_price = request.price
-            bill.billiard_paid_dt = dt.datetime.now()
-            bill.biliard_paid_by = request.paid_by
-                        
-
-            bill.paid_type = request.paid_type
-            bill.paid_amount = request.paid_amount
-            bill.is_paid = constants.YES
-            bill.paid_by = request.paid_by
-            dsc_billiard_subtotal = float(request.billiard_total if request.billiard_total else 0) - float(bill.billiard_discount if bill.billiard_discount else 0)
-            dsc_bill_subtotal = float(request.bill_total if request.bill_total else 0) - float(bill.bill_discount if bill.bill_discount else 0)
-
-            bill.dsc_billiard_subtotal = dsc_billiard_subtotal
-            bill.dsc_bill_subtotal = dsc_bill_subtotal
-
-            query = db.query(AppSetting)
-            query = query.filter(AppSetting.is_delete == constants.NO)
-            query = query.filter(AppSetting.is_inactive == constants.NO)
-            data = query.all()
-
-            data_settings = {setting.cd: setting.value for setting in data}
-
-            # Ensure data settings are converted to floats for percentage calculations
-            data_settings["pb1_bl"] = float(data_settings["pb1_bl"])
-            data_settings["service_bl"] = float(data_settings["service_bl"])
-            data_settings["pb1"] = float(data_settings["pb1"])
-            data_settings["service"] = float(data_settings["service"])
-
-            # Calculate billiard discount and service total
-            dsc_billiard_total = (dsc_billiard_subtotal * data_settings["pb1_bl"] / 100) + \
-                                (dsc_billiard_subtotal * data_settings["service_bl"] / 100)
-
-            # Calculate bill discount and service total
-            dsc_bill_total = (dsc_bill_subtotal * data_settings["pb1"] / 100) + \
-                            (dsc_bill_subtotal * data_settings["service"] / 100)
-
-            # Calculate grand total
-            bill.grand_total = round(dsc_bill_total + dsc_billiard_total + dsc_bill_subtotal + dsc_billiard_subtotal)
-
-            bill.paid_change = bill.grand_total - request.paid_amount
-            bill.paid_dt = dt.datetime.now()
-
-            query = db.query(TableSession.cd).filter(TableSession.bill_cd == cd)
-            table_session = query.all()
-
-            for tbs in table_session:
-                query = db.query(TableSession).get(tbs.cd)
-                query.is_paid = constants.YES
+        bill = db.query(Bill).get(cd)
 
 
-            db.commit()
+        bill.bill_total = request.bill_total if request.bill_total else 0
 
-            jsonStr["data"] = {
-                "paid_change": bill.paid_change
-            }
-            jsonStr["isError"] = constants.NO
-            jsonStr["status"] = "Success"
+        
+        bill.billiard_is_paid = constants.YES
+        bill.billiard_closed_dt = request.closed_dt
+        bill.billiard_total = request.billiard_total if request.billiard_total else 0
+        bill.billiard_price = request.price
+        bill.billiard_paid_dt = dt.datetime.now()
+        bill.biliard_paid_by = request.paid_by
+                    
 
-        except Exception as ex:
-            self.log.exception(" BillService")
-            jsonStr["isError"] = constants.YES
-            jsonStr["status"] = "Failed"
-            return jsonStr, 500
+        bill.paid_type = request.paid_type
+        bill.paid_amount = request.paid_amount
+        bill.is_paid = constants.YES
+        bill.paid_by = request.paid_by
+        dsc_billiard_subtotal = float(request.billiard_total if request.billiard_total else 0) - float(bill.billiard_discount if bill.billiard_discount else 0)
+        dsc_bill_subtotal = float(request.bill_total if request.bill_total else 0) - float(bill.bill_discount if bill.bill_discount else 0)
+
+        bill.dsc_billiard_subtotal = dsc_billiard_subtotal
+        bill.dsc_bill_subtotal = dsc_bill_subtotal
+
+        query = db.query(AppSetting)
+        query = query.filter(AppSetting.is_delete == constants.NO)
+        query = query.filter(AppSetting.is_inactive == constants.NO)
+        data = query.all()
+
+        data_settings = {setting.cd: setting.value for setting in data}
+
+        if data_settings["pb1_bl"] == '':
+            data_settings["pb1_bl"] = 0
+        if data_settings["service_bl"] == '':
+            data_settings["service_bl"] = 0
+        if data_settings["pb1"] == '':
+            data_settings["pb1"] = 0
+        if data_settings["service"] == '':
+            data_settings["service"] = 0
+
+        # Ensure data settings are converted to floats for percentage calculations
+        data_settings["pb1_bl"] = float(data_settings["pb1_bl"])
+        data_settings["service_bl"] = float(data_settings["service_bl"])
+        data_settings["pb1"] = float(data_settings["pb1"])
+        data_settings["service"] = float(data_settings["service"])
+
+        # Calculate billiard discount and service total
+        dsc_billiard_total = (dsc_billiard_subtotal * data_settings["pb1_bl"] / 100) + \
+                            (dsc_billiard_subtotal * data_settings["service_bl"] / 100)
+
+        # Calculate bill discount and service total
+        dsc_bill_total = (dsc_bill_subtotal * data_settings["pb1"] / 100) + \
+                        (dsc_bill_subtotal * data_settings["service"] / 100)
+
+        # Calculate grand total
+        bill.grand_total = round(dsc_bill_total + dsc_billiard_total + dsc_bill_subtotal + dsc_billiard_subtotal)
+
+        bill.paid_change = bill.grand_total - request.paid_amount
+        bill.paid_dt = dt.datetime.now()
+
+        query = db.query(TableSession.cd).filter(TableSession.bill_cd == cd)
+        table_session = query.all()
+
+        for tbs in table_session:
+            query = db.query(TableSession).get(tbs.cd)
+            query.is_paid = constants.YES
+
+
+        db.commit()
+
+        jsonStr["data"] = {
+            "paid_change": bill.paid_change
+        }
+        jsonStr["isError"] = constants.NO
+        jsonStr["status"] = "Success"
+
+        # except Exception as ex:
+        #     self.log.exception(" BillService")
+        #     jsonStr["isError"] = constants.YES
+        #     jsonStr["status"] = "Failed"
+        #     return jsonStr, 500
         # self.log.info("Response " + str(jsonStr))
         return jsonStr
 
