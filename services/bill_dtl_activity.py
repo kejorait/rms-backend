@@ -360,108 +360,110 @@ class BillDtlService:
 
     def bulkaddBillDetail(self, request, db):
         jsonStr = {}
-        try:
+        # try:
+        query = db.query(Bill)
+        query = query.filter(Bill.cd == request.bill_cd)
+        query = query.filter(Bill.is_closed == constants.NO)
+        query = query.filter(Bill.is_paid == constants.NO)
+        billdata = query.first()
+        # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
+        db.close()
+        # self.log.info("Response "+str(jsonStr))
+
+        if billdata:
+            # query = db.query(AppSetting)
+            # query = query.filter(AppSetting.is_delete == constants.NO)
+            # query = query.filter(AppSetting.is_inactive == constants.NO)
+            # query = query.filter(
+            #     AppSetting.cd.in_(["printer", "paper_width", "paper_height"])
+            # )
+            # print_query = query.all()
+
+            # Extracting individual values
+            # print_settings = {setting.cd: setting.value for setting in print_query}
+
+            query = db.query(Table.nm)
+            query = query.filter(Table.cd == billdata.table_cd)
+            table_nm = query.first()
+            printData = {}
+            printData["menu_items"] = []
+            printData["table_nm"] = table_nm.nm
+            printData["created_dt"] = dt.datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            query = db.query(User.name)
+            query = query.filter(User.cd == request.orders[0].created_by)
+            printData["created_by"] = query.first().name
+
+            for mdl in request.orders:
+                billDtl = BillDtl()
+                billDtl.cd = uuid4().hex
+                billDtl.bill_cd = request.bill_cd
+                billDtl.process_status = "NEW_ORDER"
+                billDtl.menu_cd = mdl.menu_cd
+                if "desc" in mdl:
+                    billDtl.desc = mdl.desc
+                else:
+                    billDtl.desc = ""
+                billDtl.qty = mdl.qty
+
+                menu = db.query(Menu).filter(Menu.cd == mdl.menu_cd).first()
+
+                if menu.stock == 0:
+                    jsonStr["data"] = "Stock is empty"
+                    jsonStr["isError"] = constants.YES
+                    jsonStr["status"] = "Failed"
+                    return jsonStr
+
+                # if not request.print_to_printer:
+                menu.stock = menu.stock - mdl.qty
+
+                billDtl.price = menu.price
+                billDtl.discount = menu.discount
+                billDtl.init_qty = mdl.qty
+                billDtl.split_qty = 0
+                billDtl.created_dt = dt.datetime.now()
+                billDtl.created_by = mdl.created_by
+                billDtl.is_delete = constants.NO
+                billDtl.is_inactive = constants.NO
+
+                db.add(billDtl)
+                db.commit()
+
+                printData["menu_items"].append({"menu_nm": menu.nm, "qty": mdl.qty})
+
+                jsonStr["data"] = constants.STATUS_SUCCESS
+                jsonStr["isError"] = constants.NO
+                jsonStr["status"] = "Success"
+
+            if request.print_to_printer:
+                printData["print_amount"] = request.print_amount if request.print_amount else 2
+                printSelenium.printBill(db, "new_order", printData)
+
+        else:
             query = db.query(Bill)
             query = query.filter(Bill.cd == request.bill_cd)
-            query = query.filter(Bill.is_closed == constants.NO)
-            query = query.filter(Bill.is_paid == constants.NO)
-            billdata = query.first()
-            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
+            billinfo = query.first()
             db.close()
-            # self.log.info("Response "+str(jsonStr))
-
-            if billdata:
-                # query = db.query(AppSetting)
-                # query = query.filter(AppSetting.is_delete == constants.NO)
-                # query = query.filter(AppSetting.is_inactive == constants.NO)
-                # query = query.filter(
-                #     AppSetting.cd.in_(["printer", "paper_width", "paper_height"])
-                # )
-                # print_query = query.all()
-
-                # Extracting individual values
-                # print_settings = {setting.cd: setting.value for setting in print_query}
-
-                query = db.query(Table.nm)
-                query = query.filter(Table.cd == billdata.table_cd)
-                table_nm = query.first()
-                printData = {}
-                printData["menu_items"] = []
-                printData["table_nm"] = table_nm.nm
-                printData["created_dt"] = dt.datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
-                query = db.query(User.name)
-                query = query.filter(User.cd == request.orders[0].created_by)
-                printData["created_by"] = query.first().name
-
-                for mdl in request.orders:
-                    billDtl = BillDtl()
-                    billDtl.cd = uuid4().hex
-                    billDtl.bill_cd = request.bill_cd
-                    billDtl.process_status = "NEW_ORDER"
-                    billDtl.menu_cd = mdl.menu_cd
-                    if "desc" in mdl:
-                        billDtl.desc = mdl.desc
-                    else:
-                        billDtl.desc = ""
-                    billDtl.qty = mdl.qty
-
-                    menu = db.query(Menu).filter(Menu.cd == mdl.menu_cd).first()
-
-                    if menu.stock == 0:
-                        jsonStr["data"] = "Stock is empty"
-                        jsonStr["isError"] = constants.YES
-                        jsonStr["status"] = "Failed"
-                        return jsonStr
-
-                    # if not request.print_to_printer:
-                    menu.stock = menu.stock - mdl.qty
-
-                    billDtl.price = menu.price
-                    billDtl.discount = menu.discount
-                    billDtl.init_qty = mdl.qty
-                    billDtl.split_qty = 0
-                    billDtl.created_dt = dt.datetime.now()
-                    billDtl.created_by = mdl.created_by
-                    billDtl.is_delete = constants.NO
-                    billDtl.is_inactive = constants.NO
-
-                    db.add(billDtl)
-                    db.commit()
-
-                    printData["menu_items"].append({"menu_nm": menu.nm, "qty": mdl.qty})
-
-                    jsonStr["data"] = constants.STATUS_SUCCESS
-                    jsonStr["isError"] = constants.NO
-                    jsonStr["status"] = "Success"
-
-                if request.print_to_printer:
-                    printData["print_amount"] = request.print_amount if request.print_amount else 2
-                    printSelenium.printBill(db, "new_order", printData)
-
-            else:
-                query = db.query(Bill)
-                query = query.filter(Bill.cd == request.bill_cd)
-                billinfo = query.first()
-                db.close()
+            if billinfo:
                 self.log.info(billinfo)
+                jsonStr["data"] = "Bill not found"
                 if billinfo.is_paid == constants.YES:
                     jsonStr["data"] = "Bill is PAID"
                 if billinfo.is_closed == constants.YES:
                     jsonStr["data"] = "Bill is CLOSED"
-                jsonStr["isError"] = constants.YES
-                jsonStr["status"] = "Failed"
-
-                return jsonStr, 500
-
-        except Exception as ex:
-            # self.log.exception(" BillDtlService")
             jsonStr["isError"] = constants.YES
             jsonStr["status"] = "Failed"
-            jsonStr["data"] = ex
 
             return jsonStr, 500
+
+        # except Exception as ex:
+        #     # self.log.exception(" BillDtlService")
+        #     jsonStr["isError"] = constants.YES
+        #     jsonStr["status"] = "Failed"
+        #     jsonStr["data"] = ex
+
+        #     return jsonStr, 500
         # self.log.info("Response " + str(jsonStr))
 
         return jsonStr

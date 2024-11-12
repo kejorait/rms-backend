@@ -15,35 +15,29 @@ from models.app_setting import AppSetting
 
 
 # Printing functions for Windows
-def print_pdf_windows(pdf_path, printer_name, print_amount=1, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"):
+def print_pdf_windows(pdf_path, printer_name, sumatra_path="C:\\Program Files\\SumatraPDF\\SumatraPDF.exe"):
     if not os.path.isfile(pdf_path):
         raise FileNotFoundError(f"The PDF file does not exist: {pdf_path}")
     if not os.path.isfile(sumatra_path):
         raise FileNotFoundError(f"The SumatraPDF executable does not exist: {sumatra_path}")
 
-    def delayed_print():
-        try:
-            print(f"Printing to {printer_name} using SumatraPDF")
-            # Command to print the PDF
-            command = [
-                sumatra_path,
-                "-print-to", printer_name,
-                "-print-settings", "portrait,fit",
-                pdf_path
-            ]
-            # Run the command
-            for _ in range(print_amount):
-                subprocess.run(command, check=True)
-                # Set up a non-blocking 5-second delay
-                print("Print job sent successfully.")
-                if print_amount > 1:
-                    threading.Timer(5, lambda: None).start()
-        except subprocess.CalledProcessError as e:
-            print(f"Error occurred while printing: {e}")
-        except Exception as e:
-            print(f"Unexpected error: {e}")
+    try:
+        print(f"Printing to {printer_name} using SumatraPDF")
+        # Command to print the PDF
+        command = [
+            sumatra_path,
+            "-print-to", printer_name,
+            "-print-settings", "portrait,fit",
+            pdf_path
+        ]
+        subprocess.run(command, check=True)
+        print("Print job sent successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred while printing: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
-def print_html(html_content, download_dir, print_settings, print_amount):
+def print_html(html_content, download_dir, print_settings):
     LOGGER.setLevel(logging.WARNING)
     # Suppress specific libraries' logging to CRITICAL level
     logging.getLogger("webdriver_manager").setLevel(logging.CRITICAL)
@@ -119,10 +113,7 @@ def print_html(html_content, download_dir, print_settings, print_amount):
 
     # Check if the PDF file was created successfully
     if os.path.exists(pdf_path):
-        for i in range(print_amount):
-            print_pdf_windows(pdf_path, print_settings["printer"], print_amount)
-            if print_amount > 1:
-                time.delay(5)
+        print_pdf_windows(pdf_path, print_settings["printer"])
         # print_pdf_windows(pdf_path, print_settings["printer"])
         
     # delete the pdf file
@@ -451,9 +442,10 @@ def printBill(db, billType, printData):
     # Run the print function
 
     def background_print():
-        # for i in range(printData["print_amount"]):
-        #     # print(html_content)
-        print_html(html_content, download_directory, print_settings, printData["print_amount"])
+        for i in range(printData["print_amount"]):
+            print_html(html_content, download_directory, print_settings)
+            if printData["print_amount"] > 1:
+                time.sleep(0.5)
 
     # Run the printing in a background thread
     print_thread = threading.Thread(target=background_print)
