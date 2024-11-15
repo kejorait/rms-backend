@@ -16,7 +16,9 @@ router = APIRouter(
     prefix="/auth"
 )
 
-@router.post("/login")
+tags = ["Auth"]
+
+@router.post("/login", tags=tags)
 async def login(
     request: auth.Login,
     db: Session = Depends(get_db)
@@ -30,14 +32,14 @@ async def login(
 # ):
 #     return UserCredentialService().checkCredential(request, db, SECRET_KEY)
 
-@router.post("/admin/login")
+@router.post("/admin/login", tags=tags)
 async def login_admin(
     request: auth.Login,
     db: Session = Depends(get_db)
 ):
     return UserCredentialService().loginAdmin(request, db, SECRET_KEY)
 
-@router.post("/admin/login-check")
+@router.post("/admin/login-check", tags=tags)
 async def check_admin_credential(
     request: auth.CheckAdmin,
     db: Session = Depends(get_db)

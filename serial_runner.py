@@ -67,32 +67,42 @@ def runner():
                 continue
 
             if mdl.serial_off_dt and mdl.serial_off_dt <= datetime.datetime.now() and mdl.sent_closed == constants.NO:
-                ser.write(f"RELAY {number} OFF\n".encode())  # Send command
-                time.sleep(0.5)
-                response = ser.read_all().decode().strip()
-                print(f"Command: RELAY {number} OFF\nResponse: {response}\n")
+                try:
+                    ser.write(f"RELAY {number} OFF\n".encode())  # Send command
+                    time.sleep(0.5)
+                    response = ser.read_all().decode().strip()
+                    print(f"Command: RELAY {number} OFF\nResponse: {response}\n")
 
-                mdl.serial_status = 'OFF'
-                mdl.serial_off_dt = None
-                mdl.sent_closed = constants.YES
+                    mdl.serial_status = 'OFF'
+                    mdl.serial_off_dt = None
+                    mdl.sent_closed = constants.YES
 
-                table_sessions = db.query(TableSession).filter(TableSession.table_cd == mdl.cd)
-                for session in table_sessions:
-                    session.is_closed = constants.YES
-                    if session.closed_dt is None:
-                        session.closed_dt = datetime.datetime.now()
-                    session.closed_by = 'SYSTEM'
+                    table_sessions = db.query(TableSession).filter(TableSession.table_cd == mdl.cd)
+                    for session in table_sessions:
+                        session.is_closed = constants.YES
+                        if session.closed_dt is None:
+                            session.closed_dt = datetime.datetime.now()
+                        session.closed_by = 'SYSTEM'
 
-                db.commit()
+                    db.commit()
+                except serial.SerialException:
+                    print("Serial connection error while sending OFF command, attempting to reinitialize connection.")
+                    initialize_serial_connection()
+                    continue
 
             elif mdl.serial_status == 'ON' and mdl.serial_sent == constants.NO:
-                ser.write(f"RELAY {number} ON\n".encode())  # Send command
-                time.sleep(0.5)
-                response = ser.read_all().decode().strip()
-                print(f"Command: RELAY {number} ON\nResponse: {response}\n")
-                
-                mdl.serial_sent = constants.YES
-                db.commit()
+                try:
+                    ser.write(f"RELAY {number} ON\n".encode())  # Send command
+                    time.sleep(0.5)
+                    response = ser.read_all().decode().strip()
+                    print(f"Command: RELAY {number} ON\nResponse: {response}\n")
+                    
+                    mdl.serial_sent = constants.YES
+                    db.commit()
+                except serial.SerialException:
+                    print("Serial connection error while sending ON command, attempting to reinitialize connection.")
+                    initialize_serial_connection()
+                    continue
 
     except Exception as e:
         if db:

@@ -1,4 +1,5 @@
 import datetime as dt
+import math
 
 from fastapi.responses import JSONResponse
 
@@ -234,6 +235,7 @@ class BillService:
             from_dt_utc = dt.datetime.fromtimestamp(from_dt)
             to_dt_utc =dt.datetime.fromtimestamp(to_dt)
             query = query.filter(Bill.is_paid == constants.YES)
+            query = query.filter(Bill.is_delete == constants.NO)
             query = query.filter(Bill.created_dt >= from_dt_utc)
             query = query.filter(Bill.created_dt <= to_dt_utc)
             query = query.order_by(Bill.created_dt.desc())
@@ -241,16 +243,140 @@ class BillService:
             row = query.all()
             listData = []
             subtotal = 0
+            billiard_total = 0
+            bill_total = 0
             for mdl in row:
                 data = {}
                 if mdl.waiting_nm:
                     data["table_nm"] = "Waiting List - " + mdl.table_nm if mdl.table_nm else ""
+                    data["is_billiard"] = constants.NO
                 else:
                     data["table_nm"] = mdl.table_nm if mdl.table_nm else "" + " - " + mdl.Bill.user_nm if mdl.Bill.user_nm else ""
+                    data["is_billiard"] = constants.YES
                 data["bill_dt"] = mdl.Bill.created_dt
-                data["bill_cd"] = mdl.Bill.cd
-                data["total"] = mdl.Bill.grand_total if mdl.Bill.grand_total else 0
+                bill_cd = mdl.Bill.cd
+                data["bill_cd"] = bill_cd
+                dsc_billiard_subtotal = float(mdl.Bill.dsc_billiard_subtotal if mdl.Bill.dsc_billiard_subtotal else 0)
+                dsc_bill_subtotal = float(mdl.Bill.dsc_bill_subtotal if mdl.Bill.dsc_bill_subtotal else 0)
+                pb1_bl = float(mdl.Bill.pb1_bl if mdl.Bill.pb1_bl else 0)
+                service_bl = float(mdl.Bill.service_bl if mdl.Bill.service_bl else 0)
+                pb1 = float(mdl.Bill.pb1 if mdl.Bill.pb1 else 0)
+                service = float(mdl.Bill.service if mdl.Bill.service else 0)
+                dsc_billiard_total = (dsc_billiard_subtotal * pb1_bl / 100) + \
+                            (dsc_billiard_subtotal * service_bl / 100)
+
+                # Calculate bill discount and service total
+                dsc_bill_total = (dsc_bill_subtotal * pb1 / 100) + \
+                                (dsc_bill_subtotal * service / 100)
+                data["billiard_total"] = mdl.Bill.billiard_total if mdl.Bill.billiard_total else 0
+                data["dsc_billiard"] = mdl.Bill.billiard_discount if mdl.Bill.billiard_discount else 0
+                data["dsc_billiard_subtotal"] = dsc_billiard_subtotal
+                data["dsc_billiard_total"] = dsc_billiard_total
+                data["bill_total"] = mdl.Bill.bill_total if mdl.Bill.bill_total else 0
+                data["dsc_bill"] = mdl.Bill.bill_discount if mdl.Bill.bill_discount else 0
+                data["dsc_bill_subtotal"] = dsc_bill_subtotal
+                data["dsc_bill_total"] = dsc_bill_total
+                grand_total = dsc_billiard_total + dsc_bill_total
+                data["grand_total"] = grand_total
+                data["total"] = grand_total
+                data["user_nm"] = mdl.Bill.user_nm if mdl.Bill.user_nm else ""
                 subtotal += data["total"]
+                # Fetch table session details
+                table_session_query = (
+                    db.query(
+                        TableSession.created_dt.label("session_created_dt"),
+                        TableSession.amount.label("session_amount"),
+                        TableSession.is_open.label("session_is_open"),
+                        TableSession.is_closed.label("session_is_closed"),
+                        TableSession.closed_dt,
+                        TableSession.interval,
+                        TableSession.price,
+                    )
+                    .filter(
+                        TableSession.is_inactive == constants.NO,
+                        TableSession.is_delete == constants.NO,
+                        TableSession.bill_cd == bill_cd,
+                    )
+                    .order_by(TableSession.created_dt.desc())
+                )
+
+                # self.log.info(table_session_query.statement.compile(compile_kwargs={"literal_binds": True}))
+                table_session = table_session_query.all()
+
+                # Initialize `data_list` to store results and determine session status
+                data_list = {}
+                data_list["total_open"] = 0
+                data_list["session_amount"] = 0
+                data_list["billiard_total"] = 0
+                data_list["minutes_total"] = 0
+                sessionList = []
+                if table_session:
+                    for tbs in table_session:
+                        session_list = {}
+                        session_list["price_per_interval"] = tbs.price
+                        session_list["time_interval"] = tbs.interval
+                        if tbs.session_is_open == constants.YES:
+                            session_list["session_status"] = "OPEN"
+                        elif tbs.session_is_open == constants.NO:
+                            session_list["session_status"] = "FIXED"
+                        else:
+                            session_list["session_status"] = (
+                                "CLOSED"  # In case no conditions match
+                            )
+                        session_list["session_amount"] = tbs.session_amount
+                        session_list["current_open"] = None
+                        session_list["subtotal"] = 0
+                        session_list["minutes"] = 0
+                        if tbs.session_is_open == constants.YES:
+                            if tbs.session_is_closed == constants.YES:
+                                current_open = round(
+                                    (tbs.closed_dt - tbs.session_created_dt).total_seconds()
+                                )
+                                data_list["total_open"] += current_open
+                                session_list["current_open"] = current_open
+                                session_list["session_created_dt"] = tbs.session_created_dt
+                                session_list["session_closed_dt"] = tbs.closed_dt
+                                minutes = current_open / 60
+                                session_list["minutes"] = 1 if minutes <= 1 else minutes
+                                time_interval = tbs.interval if tbs.interval else 1
+                                price_per_interval = tbs.price if tbs.price else 1
+                                round_value = math.ceil(minutes)
+                                result = round_value * price_per_interval / time_interval
+                                session_price = round(result)
+                                session_list["subtotal"] += result
+                                data_list["billiard_total"] += session_price
+
+                        if tbs.session_is_open == constants.NO:
+                            if tbs.session_is_closed == constants.YES:
+                                session_list["session_created_dt"] = tbs.session_created_dt
+                                session_list["session_closed_dt"] = tbs.closed_dt
+                            data_list["session_amount"] += tbs.session_amount
+                            minutes = tbs.session_amount / 60
+                            session_list["minutes"] = 1 if minutes <= 1 else minutes
+                            time_interval = tbs.interval if tbs.interval else 1
+                            price_per_interval = tbs.price if tbs.price else 1
+                            round_value = math.ceil(
+                                minutes / time_interval
+                            )  # Rounds up to 26
+                            result = round_value * price_per_interval
+                            session_price = result
+                            session_list["subtotal"] += session_price
+                            data_list["billiard_total"] += session_price
+
+                        if session_list:
+                            data_list["minutes_total"] += session_list["minutes"]
+                            sessionList.append(session_list)
+
+                    # Assign query results to `data_list`
+                    data_list["session_created_dt"] = table_session[0].session_created_dt
+                    # data_list["session_amount"] = table_session.session_amount
+                    data_list["sessions"] = sessionList
+                    data_list["session_is_open"] = table_session[0].session_is_open
+                    data_list["session_is_closed"] = table_session[0].session_is_closed
+                    data_list["session_closed_dt"] = table_session[0].closed_dt
+                    data.update(data_list)
+                    billiard_total += data["dsc_billiard_total"]
+                    bill_total += data["dsc_bill_total"]
                 listData.append(data)
             res = {}
 
@@ -259,8 +385,10 @@ class BillService:
             subtotal = float(subtotal)
             # res["subtotal"] = subtotal
             # res["service"] = subtotal * 0.05
-            # res["pb1"] = (subtotal + subtotal * 0.05) * 0.1
-            res["total"] = subtotal
+            # res["pb1"] = (subtotal + subtotal * 0.05) * 0.1'
+            res["billiard_total"] = billiard_total
+            res["bill_total"] = bill_total
+            res["total"] = bill_total + billiard_total
             # jsonStr = json.dumps(res, default=str)
             jsonStr = res
         except Exception as ex:
@@ -271,3 +399,4 @@ class BillService:
             return jsonStr, 500
         # self.log.info("Response " + str(jsonStr))
         return jsonStr
+        

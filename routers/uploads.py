@@ -33,28 +33,29 @@ os.makedirs(USER_FOLDER, exist_ok=True)
 os.makedirs(CATEGORY_FOLDER, exist_ok=True)
 os.makedirs(LOGO_FILE_PATH, exist_ok=True)
 
+tags = ["Uploads"]
 
-@router.get(CATEGORY_ROUTE + "{name}")
+@router.get(CATEGORY_ROUTE + "{name}", tags=tags)
 def display_file_category(name: str):
     return FileResponse(path=os.path.join(CATEGORY_FOLDER, name)) if os.path.exists(os.path.join(CATEGORY_FOLDER, name)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
-@router.get(MENU_ROUTE + "{name}")
+@router.get(MENU_ROUTE + "{name}", tags=tags)
 def display_file_menu(name: str):
     return FileResponse(path=os.path.join(MENU_FOLDER, name)) if os.path.exists(os.path.join(MENU_FOLDER, name)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
-@router.get(USER_ROUTE + "{name}")
+@router.get(USER_ROUTE + "{name}", tags=tags)
 def display_file_user(name: str):
     return FileResponse(path=os.path.join(USER_FOLDER, name)) if os.path.exists(os.path.join(USER_FOLDER, name)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
 
-@router.get(LOGO_ROUTE + "/{ext}")
+@router.get(LOGO_ROUTE + "/{ext}", tags=tags)
 def get_logo_image(ext,
     db: Session = Depends(get_db)):
     return UploadActivity().getLogo(db, ext, LOGO_FILE_PATH) if os.path.exists(os.path.join(LOGO_FILE_PATH, ext)) else JSONResponse(content={"message": "File not found"}, status_code=404)
 
-@router.post(LOGO_ROUTE)
+@router.post(LOGO_ROUTE, tags=tags)
 def upload_logo_image(
     request: uploads.UploadLogo = Depends(),
     db: Session = Depends(get_db),

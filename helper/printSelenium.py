@@ -8,6 +8,7 @@ import uuid
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.remote.remote_connection import LOGGER
 
 from helper import constants
@@ -70,7 +71,7 @@ def print_html(html_content, download_dir, print_settings):
 
     # Initialize Chrome WebDriver
     # service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(options=chrome_options)
+    driver = webdriver.Chrome(options=chrome_options, service=Service(executable_path='./chromedriver.exe'))
 
     # Convert HTML content to a base64-encoded data URL
     html_base64 = base64.b64encode(html_content.encode("utf-8")).decode("utf-8")

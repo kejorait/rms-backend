@@ -13,30 +13,32 @@ router = APIRouter(
     prefix="/table"
 )
 
-@router.post("/get")
+tags = ["Table"]
+
+@router.post("/get", tags=tags)
 async def get_all_table(request: table.Get, db: Session = Depends(get_db)):
     return TableService().getAllTable(request, db)
 
-@router.post("/get-billiard")
+@router.post("/get-billiard", tags=tags)
 async def get_all_table_billiard(request: table.Get, db: Session = Depends(get_db)):
     return TableService().getAllTableBilliard(request, db)
 
-@router.post("/create")
+@router.post("/create", tags=tags)
 async def create_table(request: table.Create, db: Session = Depends(get_db)):
     return TableService().createTable(request, db)
 
-@router.post("/update")
+@router.post("/update", tags=tags)
 async def update_table(request: table.Update, db: Session = Depends(get_db)):
     return TableService().updateTable(request, db)
 
-@router.post("/delete")
+@router.post("/delete", tags=tags)
 async def delete_table(request: table.Delete, db: Session = Depends(get_db)):
     return TableService().deleteTable(request, db)
 
-@router.post("/delete-bulk")
+@router.post("/delete-bulk", tags=tags)
 async def delete_table_bulk(request: table.DeleteBulk, db: Session = Depends(get_db)):
     return TableService().deleteTableBulk(request, db)
 
-@router.post("/get-by-cd")
+@router.post("/get-by-cd", tags=tags)
 def get_table_by_code(request: table.GetByCd, db: Session = Depends(get_db)):
     return TableService().getTableByCode(request, db)

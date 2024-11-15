@@ -25,3 +25,5 @@ key.pem
 *.exe
 *.pdf
 *.spec
+dist/rms-backend/
+/scripts/updater/fe

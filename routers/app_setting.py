@@ -10,18 +10,20 @@ router = APIRouter(
     prefix="/app-setting"
 )
 
-@router.post("/update")
+tags = ["App Setting"]
+
+@router.post("/update", tags=tags)
 def update_app_setting(request: app_setting.Update, db: Session = Depends(get_db)):
     return AppSettingService().updateAppSetting(request, db)
 
-@router.post("/get")
+@router.post("/get", tags=tags)
 def get_all_app_setting(request: app_setting.Get, db: Session = Depends(get_db)):
     return AppSettingService().getAllAppSetting(request, db)
 
-@router.get("/printers")
+@router.get("/printers", tags=tags)
 def get_printers():
     return AppSettingService().getPrinters()
 
-@router.get("/serial-ports")
+@router.get("/serial-ports", tags=tags)
 def get_serial_ports():
     return AppSettingService().getSerialPorts()

@@ -1,3 +1,4 @@
+import csv
 import datetime
 import datetime as dt
 import math
@@ -153,3 +154,52 @@ def paginate(
 def ensure_utc(dt: datetime) -> datetime:
     """Convert naive datetime to UTC if it has no timezone."""
     return dt.astimezone(ZoneInfo("Asia/Singapore"))  # Convert to UTC
+
+def generate_csv_summary(data, filename="output.csv"):
+    # Open file in write mode
+    with open(filename, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        
+        # Write header
+        header = [
+            "table_nm", "is_billiard", "bill_dt", "bill_cd", "total", "billiard_total",
+            "bill_total", "grand_total", "user_nm", "total_open", "session_amount",
+            "minutes_total", "session_created_dt", "session_is_open", "session_is_closed",
+            "session_closed_dt", "session_price_per_interval", "session_time_interval",
+            "session_status", "session_current_open", "session_subtotal", "session_minutes",
+            "session_session_created_dt", "session_session_closed_dt"
+        ]
+        writer.writerow(header)
+
+        # Write data rows
+        for record in data:
+            for session in record["sessions"]:
+                row = [
+                    record["table_nm"],
+                    record["is_billiard"],
+                    record["bill_dt"],
+                    record["bill_cd"],
+                    record["total"],
+                    record["billiard_total"],
+                    record["bill_total"],
+                    record["grand_total"],
+                    record["user_nm"],
+                    record["total_open"],
+                    record["session_amount"],
+                    record["minutes_total"],
+                    record["session_created_dt"],
+                    record["session_is_open"],
+                    record["session_is_closed"],
+                    record["session_closed_dt"],
+                    session["price_per_interval"],
+                    session["time_interval"],
+                    session["session_status"],
+                    session["current_open"],
+                    session["subtotal"],
+                    session["minutes"],
+                    session["session_created_dt"],
+                    session["session_closed_dt"]
+                ]
+                writer.writerow(row)
+
+    return filename

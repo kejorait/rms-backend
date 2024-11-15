@@ -32,7 +32,6 @@ class Bill(DeclarativeOrigin):
     billiard_paid_by = Column(String)
     user_nm = Column(String)
     is_waitinglist = Column(String)
-    dsc_billard_total = Column(Numeric)
     dsc_billiard_subtotal = Column(Numeric)
     dsc_bill_subtotal  = Column(Numeric)
     pb1 = Column(Numeric)

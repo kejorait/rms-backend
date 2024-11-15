@@ -2,19 +2,19 @@ import multiprocessing
 import os
 import re
 
-import chromedriver_autoinstaller
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, Response
 from fastapi_socketio import SocketManager
 
-chromedriver_autoinstaller.install()
+# chromedriver_autoinstaller.install()
 os.makedirs("./logs", exist_ok=True)
 import router
 
 load_dotenv(override=True)
 
-app = FastAPI()
+app = FastAPI(
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1})
 socket_manager = SocketManager(app=app, mount_location='/socket.io', cors_allowed_origins=[])
 
 # @app.get("/")

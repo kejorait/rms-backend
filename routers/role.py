@@ -1,7 +1,9 @@
 import os
+
 from fastapi import APIRouter, Depends
-from helper.database import get_db
 from sqlalchemy.orm import Session
+
+from helper.database import get_db
 from models.request import role
 from services.role_activity import RoleService
 
@@ -11,6 +13,8 @@ router = APIRouter(
     prefix="/role"
 )
 
-@router.post("/get")
+tags = ["Role"]
+
+@router.post("/get", tags=tags)
 def get_role(request: role.Get, db: Session = Depends(get_db)):
     return RoleService().getAllRole(request, db)
