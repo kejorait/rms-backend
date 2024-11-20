@@ -39,6 +39,7 @@ class CreateBulkDetail(BaseModel):
     qty: Optional[int] = Field(None, example=2)
     discount: Optional[int] = Field(None, example=0)
     created_by: Optional[str] = Field(None, example="system")
+    desc : Optional[str] = Field(None, example="desc")
 
 
 class CreateBulk(BaseModel):
