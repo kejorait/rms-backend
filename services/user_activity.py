@@ -103,6 +103,7 @@ class UserService:
             query = query.filter(User.is_delete == constants.NO)
             query = query.filter(User.is_inactive == constants.NO)
             query = query.filter(User.is_resign == constants.NO)
+            # self.log.info(query.statement.compile(compile_kwargs={"literal_binds": True}))
             data = query.all()
             db.close()
             res = {}

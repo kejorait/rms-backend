@@ -430,7 +430,7 @@ class BillDtlService:
                 db.add(billDtl)
                 db.commit()
 
-                printData["menu_items"].append({"menu_nm": menu.nm, "qty": mdl.qty})
+                printData["menu_items"].append({"menu_nm": menu.nm, "qty": mdl.qty, "desc": billDtl.desc if billDtl.desc else ""})
 
                 jsonStr["data"] = constants.STATUS_SUCCESS
                 jsonStr["isError"] = constants.NO

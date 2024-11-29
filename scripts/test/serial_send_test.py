@@ -4,7 +4,7 @@ import time
 import serial
 
 # Configuration for the serial port
-serial_port = 'COM3'  # Replace with your port (e.g., 'COM3' on Windows)
+serial_port = 'COM5'  # Replace with your port (e.g., 'COM3' on Windows)
 baud_rate = 9600
 
 # Establish the serial connection

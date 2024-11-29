@@ -1,0 +1,1 @@
+pyinstaller -F --hidden-import app --version-file .\version.txt -n rms-backend.exe -i=NONE .\main.py --clean

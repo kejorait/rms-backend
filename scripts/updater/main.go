@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -209,6 +211,22 @@ func getExecUrlAndDownload(release GitHubRelease, currentExePath, newExePath str
 	fmt.Println("Updated the binary successfully.")
 }
 
+func compareVersions(version1, version2 string) bool {
+	v1Parts := strings.Split(version1, ".")
+	v2Parts := strings.Split(version2, ".")
+
+	for i := 0; i < len(v1Parts) && i < len(v2Parts); i++ {
+		v1, _ := strconv.Atoi(v1Parts[i])
+		v2, _ := strconv.Atoi(v2Parts[i])
+		if v1 > v2 {
+			return true
+		} else if v1 < v2 {
+			return false
+		}
+	}
+	return false
+}
+
 // checkAndUpdate iterates over each release, finds a matching executable, and updates if needed
 func checkAndUpdate(currentExePath, newExePath string, owner string, repo string) {
 	releases, err := getAllGitHubReleases(owner, repo)
@@ -241,8 +259,10 @@ func checkAndUpdate(currentExePath, newExePath string, owner string, repo string
 	// Iterate over all releases and check for a matching executable in each release
 	for _, release := range releases {
 		fmt.Println("\nChecking release:", release.TagName)
-		fmt.Printf("\nRelease %s > Local %s: %t", release.TagName[1:], localVersion, release.TagName[1:] > localVersion)
-		if release.TagName[1:] > localVersion {
+		releaseVersion := release.TagName[1:] // Remove 'v'
+		localVersionNum := localVersion[1:]
+		fmt.Printf("\nRelease %s > Local %s: %t", releaseVersion, localVersionNum, compareVersions(releaseVersion, localVersionNum))
+		if releaseVersion > localVersionNum {
 			for _, asset := range release.Assets {
 				fmt.Print("\nChecking asset: ", asset.Name)
 				if filepath.Base(asset.Name) == filepath.Base(currentExePath) {
@@ -264,38 +284,40 @@ func checkAndUpdate(currentExePath, newExePath string, owner string, repo string
 	fmt.Println("\nNo update needed. The current version is up-to-date.")
 }
 
-// main checks for updates and replaces the old binary if a new version is found
-func main() {
-	var backendExePath = "./be/rms-backend.exe"
-	var newBackendExePath = "./be/rms-backend_new.exe"
+func askForUpdate(prompt string) bool {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Printf("%s (yes/no): ", prompt)
+	input, _ := reader.ReadString('\n')
+	input = strings.TrimSpace(strings.ToLower(input))
+	return input == "yes" || input == "y"
+}
 
+func main() {
 	owner := "mliem2k"
 	repo := "rms-backend"
 
-	// Check for backend executable updates
-	checkAndUpdate(backendExePath, newBackendExePath, owner, repo)
+	updateAll := askForUpdate("Update all executables and zips?")
 
-	backendExePath = "./be/serial_runner.exe"
-	newBackendExePath = "./be/serial_runner_new.exe"
+	if updateAll || askForUpdate("Update backend executable (rms-backend.exe)?") {
+		checkAndUpdate("./be/rms-backend.exe", "./be/rms-backend_new.exe", owner, repo)
+	}
 
-	// Check for backend executable updates
-	checkAndUpdate(backendExePath, newBackendExePath, owner, repo)
+	if updateAll || askForUpdate("Update serial runner executable (serial_runner.exe)?") {
+		checkAndUpdate("./be/serial_runner.exe", "./be/serial_runner_new.exe", owner, repo)
+	}
 
-	backendExePath = "./fe/rms-frontend.exe"
-	newBackendExePath = "./fe/rms-frontend_new.exe"
-
-	checkAndUpdate(backendExePath, newBackendExePath, owner, repo)
+	if updateAll || askForUpdate("Update frontend executable (rms-frontend.exe)?") {
+		checkAndUpdate("./fe/rms-frontend.exe", "./fe/rms-frontend_new.exe", owner, repo)
+	}
 
 	owner = "kejorait"
 	repo = "rms-releases"
 
-	backendExePath = "./fe/employee.zip"
-	newBackendExePath = "./fe/employee_new.zip"
+	if updateAll || askForUpdate("Update employee zip (employee.zip)?") {
+		checkAndUpdate("./fe/employee.zip", "./fe/employee_new.zip", owner, repo)
+	}
 
-	checkAndUpdate(backendExePath, newBackendExePath, owner, repo)
-
-	backendExePath = "./fe/admin.zip"
-	newBackendExePath = "./fe/admin_new.zip"
-
-	checkAndUpdate(backendExePath, newBackendExePath, owner, repo)
+	if updateAll || askForUpdate("Update admin zip (admin.zip)?") {
+		checkAndUpdate("./fe/admin.zip", "./fe/admin_new.zip", owner, repo)
+	}
 }

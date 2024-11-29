@@ -186,11 +186,25 @@ def generateKitchenBillHtml(bill):
                         padding-top: 0.5rem;
                         padding-bottom: 0.5rem;
                         border-bottom: 1px solid black;
-                        width: 80%;
+                        width: 60%;
                         font-weight: 500;
                     "
                     >
                     ITEM
+                    </th>
+                    <th
+                    style="
+                        text-align: left;
+                        font-size: 1.3125rem; /* Updated from 0.8125rem */
+                        padding-left: 0.5rem;
+                        padding-top: 0.5rem;
+                        padding-bottom: 0.5rem;
+                        border-bottom: 1px solid black;
+                        width: 20%;
+                        font-weight: 500;
+                    "
+                    >
+                    NOTES
                     </th>
                 </tr>
                 </thead>
@@ -199,6 +213,7 @@ def generateKitchenBillHtml(bill):
                             <tr>
                             <td style="text-align: center; font-size: 1.6875rem; font-weight: 700; padding: 0.25rem;">{item['qty']}</td> <!-- Updated from 1.1875rem -->
                             <td style="font-size: 1.6875rem; font-weight: 700; text-align: left; padding-left: 0.5rem;">{item['menu_nm']}</td> <!-- Updated from 1.1875rem -->
+                            <td style="font-size: 1.3125rem; font-weight: 400; text-align: left; padding-left: 0.5rem;">{item['desc']}</td> <!-- New description column -->
                             </tr>""" for item in bill["menu_items"])}
                 </tbody>
             </table>

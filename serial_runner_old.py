@@ -45,13 +45,6 @@ def initialize_serial_connection():
 def runner():
     global ser
     try:
-        # Attempt to (re)initialize the serial connection every loop
-        initialize_serial_connection()
-        
-        if ser is None or not ser.is_open:
-            print("Serial connection is not open. Skipping runner execution.")
-            return
-
         db = next(get_db())
         query = db.query(Table)
         query = query.filter(Table.is_delete == constants.NO)
@@ -67,51 +60,39 @@ def runner():
                 continue
 
             if mdl.serial_off_dt and mdl.serial_off_dt <= datetime.datetime.now() and mdl.sent_closed == constants.NO:
-                try:
-                    ser.write(f"RELAY {number} OFF\n".encode())  # Send command
-                    time.sleep(0.5)
-                    response = ser.read_all().decode().strip()
-                    print(f"Command: RELAY {number} OFF\nResponse: {response}\n")
+                ser.write(f"RELAY {number} OFF\n".encode())  # Send command
+                time.sleep(0.5)
+                response = ser.read_all().decode().strip()
+                print(f"Command: RELAY {number} OFF\nResponse: {response}\n")
 
-                    mdl.serial_status = 'OFF'
-                    mdl.serial_off_dt = None
-                    mdl.sent_closed = constants.YES
+                mdl.serial_status = 'OFF'
+                mdl.serial_off_dt = None
+                mdl.sent_closed = constants.YES
 
-                    table_sessions = db.query(TableSession).filter(TableSession.table_cd == mdl.cd)
-                    for session in table_sessions:
-                        session.is_closed = constants.YES
-                        if session.closed_dt is None:
-                            session.closed_dt = datetime.datetime.now()
-                        session.closed_by = 'SYSTEM'
+                table_sessions = db.query(TableSession).filter(TableSession.table_cd == mdl.cd)
+                for session in table_sessions:
+                    session.is_closed = constants.YES
+                    if session.closed_dt is None:
+                        session.closed_dt = datetime.datetime.now()
+                    session.closed_by = 'SYSTEM'
 
-                    db.commit()
-                except serial.SerialException:
-                    print("Serial connection error while sending OFF command, attempting to reinitialize connection.")
-                    initialize_serial_connection()
-                    continue
+                db.commit()
 
             elif mdl.serial_status == 'ON' and mdl.serial_sent == constants.NO:
-                try:
-                    ser.write(f"RELAY {number} ON\n".encode())  # Send command
-                    time.sleep(0.5)
-                    response = ser.read_all().decode().strip()
-                    print(f"Command: RELAY {number} ON\nResponse: {response}\n")
-                    
-                    mdl.serial_sent = constants.YES
-                    db.commit()
-                except serial.SerialException:
-                    print("Serial connection error while sending ON command, attempting to reinitialize connection.")
-                    initialize_serial_connection()
-                    continue
+                ser.write(f"RELAY {number} ON\n".encode())  # Send command
+                time.sleep(0.5)
+                response = ser.read_all().decode().strip()
+                print(f"Command: RELAY {number} ON\nResponse: {response}\n")
+                
+                mdl.serial_sent = constants.YES
+                db.commit()
 
     except Exception as e:
-        if db:
-            db.rollback()
+        db.rollback()
         print("An error occurred during runner execution:")
         print(traceback.format_exc())
     finally:
-        if db:
-            db.close()
+        db.close()
 
 def monitor_input():
     global running, ser
@@ -148,3 +129,4 @@ while running:
         print(traceback.format_exc())
 
 print("Runner has stopped.")
+
