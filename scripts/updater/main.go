@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/schollz/progressbar/v3"
 )
@@ -126,13 +127,25 @@ func downloadFile(url, filePath string) error {
 		progressbar.OptionSetWidth(50),
 		progressbar.OptionSetDescription("Downloading"),
 		progressbar.OptionSetPredictTime(true),
+		progressbar.OptionShowBytes(true),
+		progressbar.OptionShowCount(),
+		progressbar.OptionSetRenderBlankState(true),
+		progressbar.OptionOnCompletion(func() {
+			fmt.Println("\nDownload completed")
+		}),
 	)
 
 	// Use TeeReader to copy the content to both the file and the progress bar
+	startTime := time.Now()
 	_, err = io.Copy(io.MultiWriter(file, bar), resp.Body)
 	if err != nil {
 		return err
 	}
+	duration := time.Since(startTime).Seconds()
+	downloadSpeed := float64(resp.ContentLength) * 8 / duration / 1e6 // in megabits per second
+
+	fmt.Printf("\nDownload speed: %.2f Mbps\n", downloadSpeed)
+	fmt.Printf("Total size: %.2f MB\n", float64(resp.ContentLength)/1e6)
 
 	return nil
 }
@@ -329,16 +342,18 @@ func main() {
 		}
 	}
 
+	response = askForUpdate("Update backend executable (rms-serial_runner.exe)?")
 	// Ask about serial runner executable update
-	if updateAll == "a" || askForUpdate("Update serial runner executable (serial_runner.exe)?") == "y" || askForUpdate("Update serial runner executable (serial_runner.exe)?") == "o" {
+	if updateAll == "a" || response == "y" || response == "o" {
 		checkAndUpdate("./be/serial_runner.exe", "./be/serial_runner_new.exe", owner, repo)
 		if response == "o" {
 			return // Stop further updates after one update
 		}
 	}
 
+	response = askForUpdate("Update backend executable (rms-frontend.exe)?")
 	// Ask about frontend executable update
-	if updateAll == "a" || askForUpdate("Update frontend executable (rms-frontend.exe)?") == "y" || askForUpdate("Update frontend executable (rms-frontend.exe)?") == "o" {
+	if updateAll == "a" || response == "y" || response == "o" {
 		checkAndUpdate("./fe/rms-frontend.exe", "./fe/rms-frontend_new.exe", owner, repo)
 		if response == "o" {
 			return // Stop further updates after one update
@@ -349,24 +364,27 @@ func main() {
 	owner = "kejorait"
 	repo = "rms-releases"
 
+	response = askForUpdate("Update employee frontend (employee.zip)?")
 	// Ask about employee zip update
-	if updateAll == "a" || askForUpdate("Update employee zip (employee.zip)?") == "y" || askForUpdate("Update employee zip (employee.zip)?") == "o" {
+	if updateAll == "a" || response == "y" || response == "o" {
 		checkAndUpdate("./fe/employee.zip", "./fe/employee_new.zip", owner, repo)
 		if response == "o" {
 			return // Stop further updates after one update
 		}
 	}
 
+	response = askForUpdate("Update admin frontend (admin.zip)?")
 	// Ask about admin zip update
-	if updateAll == "a" || askForUpdate("Update admin zip (admin.zip)?") == "y" || askForUpdate("Update admin zip (admin.zip)?") == "o" {
+	if updateAll == "a" || response == "y" || response == "o" {
 		checkAndUpdate("./fe/admin.zip", "./fe/admin_new.zip", owner, repo)
 		if response == "o" {
 			return // Stop further updates after one update
 		}
 	}
 
+	response = askForUpdate("Update customer frontend (customer.zip)?")
 	// Ask about customer zip update
-	if updateAll == "a" || askForUpdate("Update customer zip (customer.zip)?") == "y" || askForUpdate("Update customer zip (customer.zip)?") == "o" {
+	if updateAll == "a" || response == "y" || response == "o" {
 		checkAndUpdate("./fe/customer.zip", "./fe/customer_new.zip", owner, repo)
 		if response == "o" {
 			return // Stop further updates after one update
