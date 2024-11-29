@@ -23,6 +23,8 @@ running = True  # Control variable for main loop
 def initialize_serial_connection():
     """Initialize the serial connection if not already connected."""
     global ser
+    random_delay = random.uniform(0, 1)
+    time.sleep(random_delay)
     if ser is None or not ser.is_open:
         try:
             # Fetch COM port setting from the database
@@ -45,6 +47,7 @@ def initialize_serial_connection():
 def runner():
     global ser
     try:
+        db = None
         # Attempt to (re)initialize the serial connection every loop
         initialize_serial_connection()
         
@@ -138,7 +141,7 @@ input_thread.start()
 initialize_serial_connection()  # Initialize serial connection once before the loop
 
 while running:
-    random_delay = random.uniform(2, 4)
+    random_delay = random.uniform(0, 1)
     time.sleep(random_delay)
     print(f"Runner checking after {random_delay:.2f} seconds delay...")
     try:
