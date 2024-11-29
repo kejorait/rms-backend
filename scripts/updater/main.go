@@ -14,6 +14,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/schollz/progressbar/v3"
 )
 
 // GitHubRelease holds GitHub API response for releases
@@ -97,67 +99,7 @@ func extractFile(f *zip.File, destPath string) error {
 	return err
 }
 
-// getFileVersion fetches the version of the binary
-func getFileVersion(filePath string) (string, error) {
-	cmd := exec.Command("powershell", "-Command", fmt.Sprintf("(Get-Item '%s').VersionInfo.ProductVersion", filePath))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "0.0.0", err
-	}
-
-	trimmedOutput := strings.TrimSpace(string(output))
-	if strings.Contains(trimmedOutput, "Cannot") {
-		return "0.0.0", nil
-	}
-
-	return "v" + trimmedOutput, nil
-}
-
-// getFileVersionZip finds the version information from version.txt in a folder with the same name as the .zip file
-func getFileVersionZip(zipPath string) (string, error) {
-	// Ensure the path is to a .zip file
-	if filepath.Ext(zipPath) != ".zip" {
-		return "0.0.0", fmt.Errorf("file is not a .zip archive")
-	}
-
-	// Get the base name (without extension) of the .zip file
-	baseName := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
-	folderPath := filepath.Join(filepath.Dir(zipPath), baseName, "static")
-
-	// Check if the folder with the same name exists
-	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
-		return "", fmt.Errorf("directory %s not found", folderPath)
-	}
-
-	// Locate the version.txt file inside the folder
-	versionFilePath := filepath.Join(folderPath, "version.txt")
-	versionData, err := ioutil.ReadFile(versionFilePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read version.txt: %v", err)
-	}
-
-	// Trim any whitespace or newline characters
-	return strings.TrimSpace(string(versionData)), nil
-}
-
-// getAllGitHubReleases retrieves all release versions from GitHub
-func getAllGitHubReleases(owner string, repo string) ([]GitHubRelease, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", owner, repo)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var releases []GitHubRelease
-	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
-		return nil, err
-	}
-
-	return releases, nil
-}
-
-// downloadFile downloads a file from the URL to the specified path
+// downloadFile downloads a file from the URL to the specified path with a progress bar.
 func downloadFile(url, filePath string) error {
 	// Ensure the directory exists
 	dir := filepath.Dir(filePath)
@@ -165,20 +107,34 @@ func downloadFile(url, filePath string) error {
 		return fmt.Errorf("failed to create directory: %v", err)
 	}
 
+	// Get the response from the URL
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 
+	// Create the destination file
 	file, err := os.Create(filePath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, resp.Body)
-	return err
+	// Create the progress bar
+	bar := progressbar.NewOptions(int(resp.ContentLength),
+		progressbar.OptionSetWidth(50),
+		progressbar.OptionSetDescription("Downloading"),
+		progressbar.OptionSetPredictTime(true),
+	)
+
+	// Use TeeReader to copy the content to both the file and the progress bar
+	_, err = io.Copy(io.MultiWriter(file, bar), resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // getExecUrlAndDownload attempts to download and replace the executable
@@ -198,7 +154,7 @@ func getExecUrlAndDownload(release GitHubRelease, currentExePath, newExePath str
 		return
 	}
 
-	// Download the latest binary
+	// Download the latest binary with a progress bar
 	err := downloadFile(downloadURL, newExePath)
 	if err != nil {
 		log.Fatalf("Error downloading file: %v", err)
@@ -209,22 +165,6 @@ func getExecUrlAndDownload(release GitHubRelease, currentExePath, newExePath str
 		log.Fatalf("Error updating binary: %v", err)
 	}
 	fmt.Println("Updated the binary successfully.")
-}
-
-func compareVersions(version1, version2 string) bool {
-	v1Parts := strings.Split(version1, ".")
-	v2Parts := strings.Split(version2, ".")
-
-	for i := 0; i < len(v1Parts) && i < len(v2Parts); i++ {
-		v1, _ := strconv.Atoi(v1Parts[i])
-		v2, _ := strconv.Atoi(v2Parts[i])
-		if v1 > v2 {
-			return true
-		} else if v1 < v2 {
-			return false
-		}
-	}
-	return false
 }
 
 // checkAndUpdate iterates over each release, finds a matching executable, and updates if needed
@@ -284,12 +224,95 @@ func checkAndUpdate(currentExePath, newExePath string, owner string, repo string
 	fmt.Println("\nNo update needed. The current version is up-to-date.")
 }
 
-func askForUpdate(prompt string) bool {
+// getFileVersion fetches the version of the binary
+func getFileVersion(filePath string) (string, error) {
+	cmd := exec.Command("powershell", "-Command", fmt.Sprintf("(Get-Item '%s').VersionInfo.ProductVersion", filePath))
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return "0.0.0", err
+	}
+
+	trimmedOutput := strings.TrimSpace(string(output))
+	if strings.Contains(trimmedOutput, "Cannot") {
+		return "0.0.0", nil
+	}
+
+	return "v" + trimmedOutput, nil
+}
+
+// getFileVersionZip finds the version information from version.txt in a folder with the same name as the .zip file
+func getFileVersionZip(zipPath string) (string, error) {
+	// Ensure the path is to a .zip file
+	if filepath.Ext(zipPath) != ".zip" {
+		return "0.0.0", fmt.Errorf("file is not a .zip archive")
+	}
+
+	// Get the base name (without extension) of the .zip file
+	baseName := strings.TrimSuffix(filepath.Base(zipPath), ".zip")
+	folderPath := filepath.Join(filepath.Dir(zipPath), baseName, "static")
+
+	// Check if the folder with the same name exists
+	if _, err := os.Stat(folderPath); os.IsNotExist(err) {
+		return "", fmt.Errorf("directory %s not found", folderPath)
+	}
+
+	// Locate the version.txt file inside the folder
+	versionFilePath := filepath.Join(folderPath, "version.txt")
+	versionData, err := ioutil.ReadFile(versionFilePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read version.txt: %v", err)
+	}
+
+	// Trim any whitespace or newline characters
+	return strings.TrimSpace(string(versionData)), nil
+}
+
+// getAllGitHubReleases retrieves all release versions from GitHub
+func getAllGitHubReleases(owner string, repo string) ([]GitHubRelease, error) {
+	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/releases", owner, repo)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var releases []GitHubRelease
+	if err := json.NewDecoder(resp.Body).Decode(&releases); err != nil {
+		return nil, err
+	}
+
+	return releases, nil
+}
+func compareVersions(version1, version2 string) bool {
+	v1Parts := strings.Split(version1, ".")
+	v2Parts := strings.Split(version2, ".")
+
+	for i := 0; i < len(v1Parts) && i < len(v2Parts); i++ {
+		v1, _ := strconv.Atoi(v1Parts[i])
+		v2, _ := strconv.Atoi(v2Parts[i])
+		if v1 > v2 {
+			return true
+		} else if v1 < v2 {
+			return false
+		}
+	}
+	return false
+}
+func askForUpdate(prompt string) string {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Printf("%s (yes/no): ", prompt)
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(strings.ToLower(input))
-	return input == "yes" || input == "y"
+	if input == "all" || input == "a" {
+		return "a"
+	}
+	if input == "yes" || input == "y" {
+		return "y"
+	}
+	if input == "only" || input == "o" {
+		return "o"
+	}
+	return "n"
 }
 
 func main() {
@@ -298,26 +321,55 @@ func main() {
 
 	updateAll := askForUpdate("Update all executables and zips?")
 
-	if updateAll || askForUpdate("Update backend executable (rms-backend.exe)?") {
+	response := askForUpdate("Update backend executable (rms-backend.exe)?")
+	if updateAll == "a" || response == "y" || response == "o" {
 		checkAndUpdate("./be/rms-backend.exe", "./be/rms-backend_new.exe", owner, repo)
+		if response == "o" {
+			return // Stop further updates after one update
+		}
 	}
 
-	if updateAll || askForUpdate("Update serial runner executable (serial_runner.exe)?") {
+	// Ask about serial runner executable update
+	if updateAll == "a" || askForUpdate("Update serial runner executable (serial_runner.exe)?") == "y" || askForUpdate("Update serial runner executable (serial_runner.exe)?") == "o" {
 		checkAndUpdate("./be/serial_runner.exe", "./be/serial_runner_new.exe", owner, repo)
+		if response == "o" {
+			return // Stop further updates after one update
+		}
 	}
 
-	if updateAll || askForUpdate("Update frontend executable (rms-frontend.exe)?") {
+	// Ask about frontend executable update
+	if updateAll == "a" || askForUpdate("Update frontend executable (rms-frontend.exe)?") == "y" || askForUpdate("Update frontend executable (rms-frontend.exe)?") == "o" {
 		checkAndUpdate("./fe/rms-frontend.exe", "./fe/rms-frontend_new.exe", owner, repo)
+		if response == "o" {
+			return // Stop further updates after one update
+		}
 	}
 
+	// Switch to another repository
 	owner = "kejorait"
 	repo = "rms-releases"
 
-	if updateAll || askForUpdate("Update employee zip (employee.zip)?") {
+	// Ask about employee zip update
+	if updateAll == "a" || askForUpdate("Update employee zip (employee.zip)?") == "y" || askForUpdate("Update employee zip (employee.zip)?") == "o" {
 		checkAndUpdate("./fe/employee.zip", "./fe/employee_new.zip", owner, repo)
+		if response == "o" {
+			return // Stop further updates after one update
+		}
 	}
 
-	if updateAll || askForUpdate("Update admin zip (admin.zip)?") {
+	// Ask about admin zip update
+	if updateAll == "a" || askForUpdate("Update admin zip (admin.zip)?") == "y" || askForUpdate("Update admin zip (admin.zip)?") == "o" {
 		checkAndUpdate("./fe/admin.zip", "./fe/admin_new.zip", owner, repo)
+		if response == "o" {
+			return // Stop further updates after one update
+		}
+	}
+
+	// Ask about customer zip update
+	if updateAll == "a" || askForUpdate("Update customer zip (customer.zip)?") == "y" || askForUpdate("Update customer zip (customer.zip)?") == "o" {
+		checkAndUpdate("./fe/customer.zip", "./fe/customer_new.zip", owner, repo)
+		if response == "o" {
+			return // Stop further updates after one update
+		}
 	}
 }
