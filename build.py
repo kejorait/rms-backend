@@ -20,14 +20,54 @@ version_file = Path("version.txt")
 with version_file.open("r") as file:
     content = file.read()
 
-new_content = re.sub(
-    r"filevers=\((\d+), (\d+), (\d+), (\d+)\),\n\s*prodvers=\((\d+), (\d+), (\d+), (\d+)\),",
-    lambda m: f"filevers={increment_version(tuple(map(int, m.groups()[:4])))}," +
-              f"\n        prodvers={increment_version(tuple(map(int, m.groups()[4:])))},",
-    content
-)
+    
+match = re.search(r"filevers=\((\d+), (\d+), (\d+), (\d+)\)", content)
+if match:
+    version = '.'.join(match.groups()[:3])  # Use major.minor.patch for release tag
 
-with version_file.open("w") as file:
+major, minor, patch, build = map(int, match.groups())
+new_version = increment_version((major, minor, patch, build))
+new_version = str(new_version)
+new_version_dot = new_version.replace(",", ".").replace("(", "").replace(")", "").replace(" ", "")[:-2]
+
+new_content = f"""
+# version.txt
+# UTF-8 encoding
+VSVersionInfo(
+    ffi=FixedFileInfo(
+        filevers={new_version},
+        prodvers={new_version},
+        mask=0x3f,
+        flags=0x0,
+        OS=0x4,
+        fileType=0x1,
+        subtype=0x0,
+        date=(0, 0)
+    ),
+    kids=[
+        StringFileInfo(
+            [
+                StringTable(
+                    '040904B0',
+                    [
+                        StringStruct('CompanyName', 'Kejora'),
+                        StringStruct('FileDescription', 'RMS Backend'),
+                        StringStruct('FileVersion', '{new_version_dot}'),
+                        StringStruct('InternalName', 'rms-backend'),
+                        StringStruct('LegalCopyright', '© Kejora'),
+                        StringStruct('OriginalFilename', 'rms-backend.exe'),
+                        StringStruct('ProductName', 'RMS Backend'),
+                        StringStruct('ProductVersion', '{new_version_dot}')
+                    ]
+                )
+            ]
+        ),
+        VarFileInfo([VarStruct('Translation', [1033, 1200])])
+    ]
+)
+"""
+
+with version_file.open("w", encoding="utf-8") as file:
     file.write(new_content)
 
 # Run commands

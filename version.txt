@@ -1,9 +1,10 @@
+
 # version.txt
 # UTF-8 encoding
 VSVersionInfo(
     ffi=FixedFileInfo(
-        filevers=(0, 0, 4, 0),
-        prodvers=(0, 0, 4, 0),
+        filevers=(0, 1, 7, 0),
+        prodvers=(0, 1, 7, 0),
         mask=0x3f,
         flags=0x0,
         OS=0x4,
@@ -19,12 +20,12 @@ VSVersionInfo(
                     [
                         StringStruct('CompanyName', 'Kejora'),
                         StringStruct('FileDescription', 'RMS Backend'),
-                        StringStruct('FileVersion', '0.0.3.0'),
+                        StringStruct('FileVersion', '0.1.7'),
                         StringStruct('InternalName', 'rms-backend'),
                         StringStruct('LegalCopyright', '© Kejora'),
                         StringStruct('OriginalFilename', 'rms-backend.exe'),
                         StringStruct('ProductName', 'RMS Backend'),
-                        StringStruct('ProductVersion', '0.0.3')
+                        StringStruct('ProductVersion', '0.1.7')
                     ]
                 )
             ]

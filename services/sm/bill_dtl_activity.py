@@ -51,6 +51,7 @@ class SmBillDtl:
             Bill.service_bl.label("service_bl"),
             Bill.bill_discount,
             Bill.bill_total,
+            Bill.created_dt
         )
         query = query.filter(
             Bill.is_delete == constants.NO, Bill.is_inactive == constants.NO
@@ -67,6 +68,7 @@ class SmBillDtl:
         bill = query.first()
 
         if bill:
+            res["created_dt"] = bill.created_dt
             bill_cd = bill.cd
             table_cd = bill.table_cd
             bill_discount = bill.bill_discount
@@ -196,6 +198,7 @@ class SmBillDtl:
                 Menu.nm.label("menu_nm"),
                 Menu.img,
                 Bill.user_nm,
+                Bill.paid_dt
             )
             .join(Menu, Menu.cd == BillDtl.menu_cd)
             .join(Bill, Bill.cd == BillDtl.bill_cd)

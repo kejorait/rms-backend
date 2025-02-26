@@ -173,9 +173,13 @@ func getExecUrlAndDownload(release GitHubRelease, currentExePath, newExePath str
 		log.Fatalf("Error downloading file: %v", err)
 	}
 
-	// Replace the current executable with the new one
-	if err = os.Rename(newExePath, currentExePath); err != nil {
-		log.Fatalf("Error updating binary: %v", err)
+	if err := os.Remove(currentExePath); err != nil {
+		fmt.Printf("Error deleting current binary: %v", err)
+	}
+
+	// Rename the new executable to the current executable's path
+	if err := os.Rename(newExePath, currentExePath); err != nil {
+		log.Fatalf("Error renaming new binary: %v", err)
 	}
 	fmt.Println("Updated the binary successfully.")
 }

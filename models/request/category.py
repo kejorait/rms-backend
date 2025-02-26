@@ -19,7 +19,7 @@ class Create:
         created_by: Optional[str] = Form(None, json_schema_extra={
             'example': 'owner',
         }),
-        file: UploadFile = File(None, content_type='image/*')
+        file: UploadFile | None = None
     ):
         self.nm = nm
         self.created_by = created_by
