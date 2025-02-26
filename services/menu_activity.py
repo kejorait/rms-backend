@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 
 from helper import constants
 from helper.jsonHelper import ExtendEncoder
+from models.app_setting import AppSetting
 from models.bill import Bill
 from models.category import Category
 from models.menu import Menu
@@ -51,6 +52,7 @@ class MenuService:
             menu.nm = request.nm
             menu.desc = request.desc
             menu.price = request.price
+            menu.price_2 = request.price_2
 
             menu.category_cd = request.category_cd
             menu.created_dt = datetime.datetime.now()
@@ -119,6 +121,7 @@ class MenuService:
             menu.nm = request.nm
             menu.desc = request.desc
             menu.price = request.price
+            menu.price_2 = request.price_2
             menu.category_cd = request.category_cd
             menu.updated_dt = datetime.datetime.now()
             menu.updated_by = request.updated_by
@@ -276,10 +279,31 @@ class MenuService:
                                 menu_list_data["img"] = ""
                             menu_list_data["desc"] = mdl2.Menu.desc
                             menu_list_data["price"] = mdl2.Menu.price
+                            menu_list_data["price_2"] = mdl2.Menu.price_2
                             menu_list_data["discount"] = mdl2.Menu.discount
                             menu_list_data["stock"] = mdl2.Menu.stock
-                            menu_list_data["final_price"] = mdl2.Menu.price - mdl2.Menu.discount
-                            menu_list_data["stock"] = mdl2.Menu.stock
+                            menu_list_data["final_price"] = 0
+                            base_price = mdl2.Menu.price2 if mdl2.Menu.price2 else mdl2.Menu.price if mdl2.Menu.price else 0
+                            
+                            # Get price2_time setting
+                            price2_time_query = db.query(AppSetting.value)\
+                                .filter(AppSetting.cd == 'price2_time')\
+                                .filter(AppSetting.is_inactive == constants.NO)\
+                                .filter(AppSetting.is_delete == constants.NO)\
+                                .first()
+                                
+                            current_hour = datetime.datetime.now().hour
+                            
+                            # If price2_time is set and current time is past that hour, use price2
+                            if price2_time_query:
+                                try:
+                                    price2_hour = int(price2_time_query[0])
+                                    if 0 <= price2_hour <= 24 and current_hour >= price2_hour:
+                                        base_price = mdl2.Menu.price2 if mdl2.Menu.price2 else mdl2.Menu.price if mdl2.Menu.price else 0
+                                except (ValueError, TypeError):
+                                    pass  # If price2_time is not a valid number, use default price logic
+                                    
+                            menu_list_data["final_price"] = base_price - (mdl2.Menu.discount if mdl2.Menu.discount else 0)
                             menu_list_data["category_cd"] = mdl2.Menu.category_cd
                             menu_list_data["created_dt"] = mdl2.Menu.created_dt
                             menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -357,9 +381,31 @@ class MenuService:
                             menu_list_data["img"] = ""
                         menu_list_data["desc"] = mdl2.Menu.desc
                         menu_list_data["price"] = mdl2.Menu.price
+                        menu_list_data["price_2"] = mdl2.Menu.price_2
                         menu_list_data["discount"] = mdl2.Menu.discount
                         menu_list_data["stock"] = mdl2.Menu.stock
-                        menu_list_data["final_price"] = (mdl2.Menu.price if mdl2.Menu.price else 0) - (mdl2.Menu.discount if mdl2.Menu.discount else 0)
+                        menu_list_data["final_price"] = 0
+                        base_price = mdl2.Menu.price2 if mdl2.Menu.price2 else mdl2.Menu.price if mdl2.Menu.price else 0
+                        
+                        # Get price2_time setting
+                        price2_time_query = db.query(AppSetting.value)\
+                            .filter(AppSetting.cd == 'price2_time')\
+                            .filter(AppSetting.is_inactive == constants.NO)\
+                            .filter(AppSetting.is_delete == constants.NO)\
+                            .first()
+                            
+                        current_hour = datetime.datetime.now().hour
+                        
+                        # If price2_time is set and current time is past that hour, use price2
+                        if price2_time_query:
+                            try:
+                                price2_hour = int(price2_time_query[0])
+                                if 0 <= price2_hour <= 24 and current_hour >= price2_hour:
+                                    base_price = mdl2.Menu.price2 if mdl2.Menu.price2 else mdl2.Menu.price if mdl2.Menu.price else 0
+                            except (ValueError, TypeError):
+                                pass  # If price2_time is not a valid number, use default price logic
+                                
+                        menu_list_data["final_price"] = base_price - (mdl2.Menu.discount if mdl2.Menu.discount else 0)
                         menu_list_data["category_cd"] = mdl2.Menu.category_cd
                         menu_list_data["created_dt"] = mdl2.Menu.created_dt
                         menu_list_data["created_by"] = mdl2.Menu.created_by
@@ -417,6 +463,7 @@ class MenuService:
                 data_list["img"] = ""
             data_list["desc"] = data.Menu.desc
             data_list["price"] = data.Menu.price
+            data_list["price_2"] = data.Menu.price_2
             data_list["discount"] = data.Menu.discount
             data_list["stock"] = data.Menu.stock
             data_list["category_cd"] = data.Menu.category_cd
