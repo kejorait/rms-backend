@@ -52,7 +52,7 @@ class MenuService:
             menu.nm = request.nm
             menu.desc = request.desc
             menu.price = request.price
-            menu.price_2 = request.price_2
+            menu.price_2 = request.price_2 if request.price_2 and request.price_2 != 0 else request.price
 
             menu.category_cd = request.category_cd
             menu.created_dt = datetime.datetime.now()
@@ -121,7 +121,7 @@ class MenuService:
             menu.nm = request.nm
             menu.desc = request.desc
             menu.price = request.price
-            menu.price_2 = request.price_2
+            menu.price_2 = request.price_2 if request.price_2 and request.price_2 != 0 else request.price
             menu.category_cd = request.category_cd
             menu.updated_dt = datetime.datetime.now()
             menu.updated_by = request.updated_by
@@ -279,7 +279,7 @@ class MenuService:
                                 menu_list_data["img"] = ""
                             menu_list_data["desc"] = mdl2.Menu.desc
                             menu_list_data["price"] = mdl2.Menu.price
-                            menu_list_data["price_2"] = mdl2.Menu.price_2
+                            menu_list_data["price_2"] = mdl2.Menu.price_2 if mdl2.Menu.price_2 and mdl2.Menu.price_2 != 0 else mdl2.Menu.price
                             menu_list_data["discount"] = mdl2.Menu.discount
                             menu_list_data["stock"] = mdl2.Menu.stock
                             menu_list_data["final_price"] = 0
@@ -381,7 +381,7 @@ class MenuService:
                             menu_list_data["img"] = ""
                         menu_list_data["desc"] = mdl2.Menu.desc
                         menu_list_data["price"] = mdl2.Menu.price
-                        menu_list_data["price_2"] = mdl2.Menu.price_2
+                        menu_list_data["price_2"] = mdl2.Menu.price_2 if mdl2.Menu.price_2 and mdl2.Menu.price_2 != 0 else mdl2.Menu.price
                         menu_list_data["discount"] = mdl2.Menu.discount
                         menu_list_data["stock"] = mdl2.Menu.stock
                         menu_list_data["final_price"] = 0
@@ -463,7 +463,7 @@ class MenuService:
                 data_list["img"] = ""
             data_list["desc"] = data.Menu.desc
             data_list["price"] = data.Menu.price
-            data_list["price_2"] = data.Menu.price_2
+            data_list["price_2"] = data.Menu.price_2 if data.Menu.price_2 and data.Menu.price_2 != 0 else data.Menu.price
             data_list["discount"] = data.Menu.discount
             data_list["stock"] = data.Menu.stock
             data_list["category_cd"] = data.Menu.category_cd
